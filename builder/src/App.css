@@ -1,0 +1,47 @@
+.App {
+  text-align: center;
+}
+
+.App-logo {
+  height: 80px;
+}
+.App-logo.spin {
+  animation: App-logo-spin infinite 20s linear;
+}
+
+.App-header {
+  background-color: #222;
+  height: 150px;
+  padding: 20px;
+  color: white;
+}
+
+.App-intro {
+  font-size: large;
+}
+
+@keyframes App-logo-spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+
+/* Cal Builder Styles */
+.tag {
+  background: #A9F;
+  border-radius: 0.25em;
+  display: inline-block;
+  margin-bottom: 0.25em;
+  margin-right: 0.25em;
+  padding: 0.5em;
+}
+.tag:hover,
+.tag.selected-true {
+  background: #F9F;
+}
+
+.calendar-element {
+  background: #AAA;
+  margin: 1em;
+  padding: 0.25em;
+}
