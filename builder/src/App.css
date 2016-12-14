@@ -34,10 +34,17 @@
   margin-bottom: 0.25em;
   margin-right: 0.25em;
   padding: 0.5em;
+  border: 1px #fff solid;
 }
-.tag:hover,
+.tag:hover {
+  /*background: #FFF;*/
+  border: 1px #F9F solid;
+}
 .tag.selected-true {
   background: #F9F;
+}
+.tag:active {
+  background: #D7D;
 }
 
 .calendar-element {
