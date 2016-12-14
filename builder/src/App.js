@@ -34,13 +34,33 @@ class App extends Component {
     this.state = {tags: [], query: '', selected_tags: {}};
     this.handleTagClick = this.handleTagClick.bind(this);
   }
-  filterData(data) {
-    console.log('Re-filtering data for the calendar based on...');
-    console.log(this.state.selected_tags);
+  filterData(data, cb) {
+    // console.log('Re-filtering data for the calendar based on...');
+    // console.log(this.state.selected_tags);
+    var filterDocs = data.response.docs;
+    var filters = this.state.selected_tags;
+    // Only do filtering if there are any filters.
+    if (!_.isEmpty(filters)) {
+      filterDocs = _.filter(filterDocs, function(obj) {
+        var include = false;
+        _.each(filters, function(filter){
+          // console.log(_.indexOf(obj['sm_field_tags:name'], filter.title) >= 0, obj.id);
+          // TODO need to include for EACH filter or not! So an array that if includes one false, excludes the doc (AND operator)
+          include = _.indexOf(obj['sm_field_tags:name'], filter.title) >= 0;
+        });
+        return include;
+      });
+      // console.log('filtered docs', filterDocs);
+    } else {
+      // console.log('non-filtered docs', filterDocs);
+    }
+    // TODO fix up this callback design.  Kinda weird.
+    cb(filterDocs);
     // var that = this;
     // _.each(this.state.selected_tags, function(val){
     //   console.log(that.state.selected_tags[val].title);
     // })
+    
   }
 
   handleTagClick(tag) {
@@ -49,24 +69,21 @@ class App extends Component {
     var selected = this.state.selected_tags;
     // If the tag isn't already selected.
     if (_.has(selected, tag.id) === false) {
-      // selected.push(tag);
       selected[tag.id] = tag;
-      // selected[tag.id] = tag;
-      console.log('adding tag', selected);
+      // console.log('adding tag', selected);
     } else {
       _.unset(selected, [tag.id]);
-      console.log('removed', selected);
+      // console.log('removed', selected);
     }
-      //TODO: duh! figure out the slice/drop or whatver method. WHy does this still run w/ old state? need replaceState?
+      
     this.setState({selected_tags: selected}, function(){
-      // console.log(this.state);
-      // console.log(selected);
-      // console.log(!_.indexOf(selected, tag.id));
       // Now filter the data.
-      console.log(this.state.selected_tags);
-      this.filterData(data);
-      // Now update the calendar.
-      // this.updateCal();
+      // console.log(this.state.selected_tags);
+      this.filterData(data, function(docs) {
+        // Now update the calendar.
+        // this.updateCal();
+        console.log('filtered docs', docs);
+      });
     });
     
   }
@@ -80,7 +97,8 @@ class App extends Component {
     var newTags = [];
     raw.map((entry, key)=>{
       // Ugh. the facet_field object is stoopid!
-      // Just getting the tags, not the counts.
+      // Just getting the tags, not the counts. Although the counts might be usefull...
+      // TODO: investigate using just the tags with a count over certain threshold, will fix issue where we return a million tags. Although politics will ruin that plan :P
       if (typeof(entry) === 'string') {
         newTags.push({
           id: shortid.generate(),
@@ -180,5 +198,8 @@ class Calendar extends Component {
     )
   }
 }
+
+// Removes all console calls to actual console.
+// console.log = function(){};
 
 export default App;
