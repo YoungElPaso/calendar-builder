@@ -46,6 +46,10 @@
 .tag:active {
   background: #D7D;
 }
+.tag.disabled {
+  background: #FFF;
+  opacity: 0.3;
+}
 
 .calendar-element {
   background: #AAA;
