@@ -41,14 +41,20 @@ class App extends Component {
     var filters = this.state.selected_tags;
     // Only do filtering if there are any filters.
     if (!_.isEmpty(filters)) {
+      // Filter through each doc, and check if its tags match ours selected.
       filterDocs = _.filter(filterDocs, function(obj) {
-        var include = false;
+        var includeChecks = [];
+        // Check each filter against the doc.
         _.each(filters, function(filter){
           // console.log(_.indexOf(obj['sm_field_tags:name'], filter.title) >= 0, obj.id);
           // TODO need to include for EACH filter or not! So an array that if includes one false, excludes the doc (AND operator)
-          include = _.indexOf(obj['sm_field_tags:name'], filter.title) >= 0;
+          includeChecks.push(_.indexOf(obj['sm_field_tags:name'], filter.title) >= 0);
         });
-        return include;
+        // TODO fix up this hard to follow boolean logic.  Make it more legible.
+        console.log(obj.id, includeChecks, _.indexOf(includeChecks, false) >= 0);
+        // debugger;
+        return _.indexOf(includeChecks, false) < 0;
+        // return true;
       });
       // console.log('filtered docs', filterDocs);
     } else {
