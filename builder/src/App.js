@@ -46,10 +46,14 @@ class App extends Component {
     var that = this;
     _.each(that.state.tags, function(tag, whichTag) {
       var deadEnd = [];
+      tag.count = 0;
       _.each(docs, function(doc) {
         if(_.indexOf(doc['sm_field_tags:name'], tag.title) < 0) {
           deadEnd.push(false);
+          // console.log('count', tag.count);
         } else {
+          // Fix this operator up.
+          tag.count = tag.count + 1;
           deadEnd.push(true);
         };
       });
@@ -202,7 +206,7 @@ class TagList extends Component {
         <h3>Available tags:</h3>
         {
           this.props.tags.map((tag) =>
-            <Tag key={tag.id} title={tag.title} onClick={clicky.bind(this, tag)} toggle={_.has(selected, tag.id)} enabled={tag.enabled || 'enabled'} />
+            <Tag key={tag.id} title={tag.title} onClick={clicky.bind(this, tag)} toggle={_.has(selected, tag.id)} enabled={tag.enabled || 'enabled'} count={tag.count} />
           )
         }
       </div>
@@ -225,7 +229,7 @@ class Tag extends Component {
   render () {
     return (
       <div className={'tag selected-'+ this.props.toggle + ' ' + this.props.enabled } onClick={this.props.onClick}>
-      {this.props.title}
+      {this.props.title} <span className="count">{this.props.count}</span>
       </div>
     );
   }
