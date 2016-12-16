@@ -42,6 +42,7 @@ class App extends Component {
   // Updates the state of the tags based on filter actions.
   updateTags(docs) {
     // For filter check if its in any of docs (ideally docs are narrowed at this point) if it is, its still enabled, if it isn't disable it.'
+    console.log('updating tags');
     var that = this;
     _.each(that.state.tags, function(tag, whichTag) {
       var deadEnd = [];
@@ -155,11 +156,13 @@ class App extends Component {
       tags: newTags
       },
       function(){
+        this.updateTags(data.response.docs);
         console.log('updating state from server');
     });
   }
   componentDidMount() {
     // Get all of the tags for the UI.
+    // Run update on all tags right away?
     this.getAllTags(data);
   }
   render() {
@@ -170,7 +173,7 @@ class App extends Component {
           <h2>Welcome to Calendar Builder 1.0</h2>
         </div>
         <p className="App-intro">
-          This app will access Solr and spew out some tags to filter by and eventually show a calendar.
+          Build a calendar by selecting available tags.  NB: tags that have no events associated with them in this set of events are disabled. Selecting tags narrows the set.
         </p>
         <TagList tags={this.state.tags} clicky={this.handleTagClick} selected={this.state.selected_tags}/>
         <Calendar id="search-calendar"/>
@@ -237,7 +240,6 @@ class Calendar extends Component {
   render() {
     return (
       <div className="calendar-element" id={this.props.id}>
-        <h2> TODO: The calendar goes here? This needs to go? Its not replaced? WEird</h2>
       </div>
     )
   }
