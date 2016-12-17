@@ -35,6 +35,7 @@
   margin-right: 0.25em;
   padding: 0.5em;
   border: 1px #fff solid;
+  transition: all 0.2s linear;
 }
 .tag:hover {
   /*background: #FFF;*/
@@ -46,6 +47,18 @@
 .tag:active {
   background: #D7D;
 }
+.tag.disabled {
+  background: #FFF;
+  opacity: 0.3;
+}
+.tag span.count {
+
+  background: #fff;
+  border-radius: 0.25em;
+  padding: 0.1em 0.15em;
+  opacity: 0.4;
+}
+
 
 .calendar-element {
   background: #AAA;
