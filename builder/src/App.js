@@ -37,6 +37,18 @@ class App extends Component {
       this.state = {tags: [], query: '', selected_tags: {}};
     }
     this.handleTagClick = this.handleTagClick.bind(this);
+    this.onlyLocal = this.onlyLocal.bind(this);
+  }
+
+  // Toggles the onlyLocal filtering.
+  onlyLocal(){
+    console.log('parent local');
+    if (this.state.onlyLocalEnabled === false || !this.state.onlyLocalEnabled) {
+      this.setState({onlyLocalEnabled: true})
+    } else {
+      this.setState({onlyLocalEnabled: false})
+    }
+    // TODO: need the actual callback after setState to do filtering and update tags.
   }
 
   // Updates the state of the tags based on filter actions.
@@ -179,6 +191,7 @@ class App extends Component {
         <p className="App-intro">
           Build a calendar by selecting available tags.  NB: tags that have no events associated with them in this set of events are disabled. Selecting tags narrows the set.
         </p>
+        <Local onClick={this.onlyLocal} enabled={this.state.onlyLocalEnabled}/>
         <TagList tags={this.state.tags} clicky={this.handleTagClick} selected={this.state.selected_tags}/>
         <Calendar id="search-calendar"/>
       </div>
@@ -249,7 +262,27 @@ class Calendar extends Component {
   }
 }
 
+class Local extends Component {
+  render () {
+    var enabled = this.props.enabled || false;
+    return (
+      <div className={'local-toggle ' + 'local-' + enabled} onClick={this.props.onClick}>
+        Only local content: {enabled.toString()}
+      </div>
+    )
+  }
+}
+
 // Removes all console calls to actual console.
 // console.log = function(){};
 
 export default App;
+
+
+// General todos:
+/**
+ * - Sort the tags at first by number of hits? But then does it re-sort? Hrm...the solr response is by most, but I just dont have all the docs to support it! One of the issues with having count...
+ * - Have a local/non-local toggle - should cycle through all tags and disable empty ones like updateTags does regularly
+ * - Top 10 tag toggle? Simplifies the UI, but limits utility. Still might be useful to think about since it sorta forces content creators to think in terms of top-ten or twenty tags (this would work well with sorting)
+ * - Investigate solr query more - i.e. limit tags to top 10? see about getting a lot more docs, and maybe facet count for that result set, not the total result set. That would be a key distinction.  
+ */
