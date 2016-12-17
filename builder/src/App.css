@@ -27,7 +27,8 @@
 
 
 /* Cal Builder Styles */
-.tag {
+.tag,
+.local-toggle {
   background: #A9F;
   border-radius: 0.25em;
   display: inline-block;
@@ -37,14 +38,17 @@
   border: 1px #fff solid;
   transition: all 0.2s linear;
 }
-.tag:hover {
+.tag:hover,
+.local-toggle:hover {
   /*background: #FFF;*/
   border: 1px #F9F solid;
 }
-.tag.selected-true {
+.tag.selected-true,
+.local-toggle.local-true {
   background: #F9F;
 }
-.tag:active {
+.tag:active,
+.local-toggle:active {
   background: #D7D;
 }
 .tag.disabled {
