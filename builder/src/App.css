@@ -5,9 +5,6 @@
 .App-logo {
   height: 80px;
 }
-.App-logo.spin {
-  animation: App-logo-spin infinite 20s linear;
-}
 
 .App-header {
   background-color: #222;
@@ -26,7 +23,9 @@
 }
 
 
-/* Cal Builder Styles */
+/* Cal Builder Styles. */
+
+/* Tag & Local Filter Styles. */
 .tag,
 .local-toggle {
   background: #A9F;
@@ -56,14 +55,15 @@
   opacity: 0.3;
 }
 .tag span.count {
-
+  display:inline-block;
   background: #fff;
   border-radius: 0.25em;
-  padding: 0.1em 0.15em;
+  width: 2em;
   opacity: 0.4;
+  padding: 0.1em 0.15em;
 }
 
-
+/* Calendar Styles. */
 .calendar-element {
   background: #AAA;
   margin: 1em;
