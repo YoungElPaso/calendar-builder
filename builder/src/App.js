@@ -15,7 +15,8 @@ import calendarIcon from './calendar-icon.svg';
 
 // TODO: try filtering on client side, instead of extra ajax for prototype.
 // Yeah use lodash filtering to create a function that locally re-queries the JSON based on facets selected. No need to keep going back to the server.
-import data from './data/new-test-events-lots.json';
+// import data from './data/new-test-events-lots.json';
+import data from './data/big-data.json';
 // Bring in the css.
 import './App.css';
 
@@ -191,7 +192,9 @@ class App extends Component {
         <p className="App-intro">
           Build a calendar by selecting available tags.  NB: tags that have no events associated with them in this set of events are disabled. Selecting tags narrows the set.
         </p>
+        <h3> Filtering Options: </h3>
         <Local onClick={this.onlyLocal} enabled={this.state.onlyLocalEnabled}/>
+        <div>Show only the top 10 tags: true</div>
         <TagList tags={this.state.tags} clicky={this.handleTagClick} selected={this.state.selected_tags}/>
         <Calendar id="search-calendar"/>
       </div>
