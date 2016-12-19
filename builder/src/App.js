@@ -193,7 +193,8 @@ class App extends Component {
           Build a calendar by selecting available tags.  NB: tags that have no events associated with them in this set of events are disabled. Selecting tags narrows the set.
         </p>
         <h3> Filtering Options: </h3>
-        <Local onClick={this.onlyLocal} enabled={this.state.onlyLocalEnabled}/>
+        <Local onClick={this.onlyLocal} enabled={this.state.onlyLocalEnabled} label="Only local content:" />
+        <TopTen onClick={this.onlyTopTen} label="Only top 10: tags" enabled=''/>
         <div>Show only the top 10 tags: true</div>
         <TagList tags={this.state.tags} clicky={this.handleTagClick} selected={this.state.selected_tags}/>
         <Calendar id="search-calendar"/>
@@ -266,14 +267,22 @@ class Calendar extends Component {
 }
 
 class Local extends Component {
+  constructor(props) {
+    super(props);
+    this.props = props;
+  }
   render () {
     var enabled = this.props.enabled || false;
     return (
       <div className={'local-toggle ' + 'local-' + enabled} onClick={this.props.onClick}>
-        Only local content: {enabled.toString()}
+        {this.props.label} {enabled.toString()}
       </div>
     )
   }
+}
+
+class TopTen extends Local {
+
 }
 
 // Removes all console calls to actual console.
@@ -288,4 +297,6 @@ export default App;
  * - Have a local/non-local toggle - should cycle through all tags and disable empty ones like updateTags does regularly
  * - Top 10 tag toggle? Simplifies the UI, but limits utility. Still might be useful to think about since it sorta forces content creators to think in terms of top-ten or twenty tags (this would work well with sorting)
  * - Investigate solr query more - i.e. limit tags to top 10? see about getting a lot more docs, and maybe facet count for that result set, not the total result set. That would be a key distinction.  
+ * - Maybe order the tags in alphabetical order.
+ * - If alphabetical maybe ditch the numbers? Are they misleading?
  */
