@@ -39,6 +39,7 @@ class App extends Component {
     }
     this.handleTagClick = this.handleTagClick.bind(this);
     this.onlyLocal = this.onlyLocal.bind(this);
+    this.onlyTopTen = this.onlyTopTen.bind(this);
   }
 
   // Toggles the onlyLocal filtering.
@@ -48,6 +49,16 @@ class App extends Component {
       this.setState({onlyLocalEnabled: true})
     } else {
       this.setState({onlyLocalEnabled: false})
+    }
+    // TODO: need the actual callback after setState to do filtering and update tags.
+  }
+  // Toggles the onlyLocal filtering.
+  onlyTopTen(){
+    console.log('parent TopTen');
+    if (this.state.onlyTopTenEnabled === false || !this.state.onlyTopTenEnabled) {
+      this.setState({onlyTopTenEnabled: true})
+    } else {
+      this.setState({onlyTopTenEnabled: false})
     }
     // TODO: need the actual callback after setState to do filtering and update tags.
   }
@@ -194,7 +205,7 @@ class App extends Component {
         </p>
         <h3> Filtering Options: </h3>
         <Local onClick={this.onlyLocal} enabled={this.state.onlyLocalEnabled} label="Only local content:" />
-        <TopTen onClick={this.onlyTopTen} label="Only top 10: tags" enabled=''/>
+        <TopTen onClick={this.onlyTopTen} label="Only top 10: tags" enabled={this.state.onlyTopTenEnabled}/>
         <div>Show only the top 10 tags: true</div>
         <TagList tags={this.state.tags} clicky={this.handleTagClick} selected={this.state.selected_tags}/>
         <Calendar id="search-calendar"/>
@@ -266,7 +277,7 @@ class Calendar extends Component {
   }
 }
 
-class Local extends Component {
+class OptionToggle extends Component {
   constructor(props) {
     super(props);
     this.props = props;
@@ -274,15 +285,17 @@ class Local extends Component {
   render () {
     var enabled = this.props.enabled || false;
     return (
-      <div className={'local-toggle ' + 'local-' + enabled} onClick={this.props.onClick}>
+      <div className={'option-toggle ' + 'option-' + enabled} onClick={this.props.onClick}>
         {this.props.label} {enabled.toString()}
       </div>
     )
   }
 }
 
-class TopTen extends Local {
+class Local extends OptionToggle {
+}
 
+class TopTen extends OptionToggle {
 }
 
 // Removes all console calls to actual console.
@@ -299,4 +312,5 @@ export default App;
  * - Investigate solr query more - i.e. limit tags to top 10? see about getting a lot more docs, and maybe facet count for that result set, not the total result set. That would be a key distinction.  
  * - Maybe order the tags in alphabetical order.
  * - If alphabetical maybe ditch the numbers? Are they misleading?
+ * - TODO: split this file up, its getting fugly. App  component should have own file.
  */

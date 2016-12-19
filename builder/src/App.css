@@ -27,7 +27,7 @@
 
 /* Tag & Local Filter Styles. */
 .tag,
-.local-toggle {
+.option-toggle {
   background: #A9F;
   border-radius: 0.25em;
   display: inline-block;
@@ -38,16 +38,16 @@
   transition: all 0.2s linear;
 }
 .tag:hover,
-.local-toggle:hover {
+.option-toggle:hover {
   /*background: #FFF;*/
   border: 1px #F9F solid;
 }
 .tag.selected-true,
-.local-toggle.local-true {
+.option-toggle.option-true {
   background: #F9F;
 }
 .tag:active,
-.local-toggle:active {
+.option-toggle:active {
   background: #D7D;
 }
 .tag.disabled {
