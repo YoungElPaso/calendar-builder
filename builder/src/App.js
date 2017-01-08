@@ -35,7 +35,13 @@ class App extends Component {
 
     // TODO: state should be empty and loaded from localstorage, if we want something fancy.  
     if (!this.state) {
-      this.state = {tags: [], query: '', selected_tags: {}};
+      this.state = {
+        tags: [],
+        query: '', 
+        selected_tags: {},
+        localSite: 'https://testbed13.ccs.mcgill.ca/wms',
+        onlyLocalEnabled: false
+      };
     }
     this.handleTagClick = this.handleTagClick.bind(this);
     this.onlyLocal = this.onlyLocal.bind(this);
@@ -44,11 +50,14 @@ class App extends Component {
 
   // Toggles the onlyLocal filtering.
   onlyLocal(){
-    console.log('parent local');
     if (this.state.onlyLocalEnabled === false || !this.state.onlyLocalEnabled) {
-      this.setState({onlyLocalEnabled: true})
+      this.setState({onlyLocalEnabled: true}, function(){
+        console.log('parent local', this.state.localSite, this.state.onlyLocalEnabled);
+      });
     } else {
-      this.setState({onlyLocalEnabled: false})
+      this.setState({onlyLocalEnabled: false}, function(){
+        console.log('parent local', this.state.localSite, this.state.onlyLocalEnabled);
+      })
     }
     // TODO: need the actual callback after setState to do filtering and update tags.
   }
@@ -67,12 +76,22 @@ class App extends Component {
   updateTags(docs) {
     // For filter check if its in any of docs (ideally docs are narrowed at this point) if it is, its still enabled, if it isn't disable it.'
     console.log('updating tags');
+    // var localFilter = this.state.localSite;
+    var localFilterEnabled = this.state.onlyLocalEnabled ? this.state.localSite : false;
+
     var that = this;
     _.each(that.state.tags, function(tag, whichTag) {
       var deadEnd = [];
       tag.count = 0;
       _.each(docs, function(doc) {
-        if(_.indexOf(doc['sm_field_tags:name'], tag.title) < 0) {
+        // console.log(doc['ss_field_source_site:url']);
+        // debugger;
+        console.log(localFilterEnabled);
+        // This filter logic kinda sux.  Needs to be a bit more flexible than this.
+        localFilterEnabled = that.state.localSite;
+        var filterLocal = doc['ss_field_source_site:url'] == localFilterEnabled;
+        // console.log(filterLocal, localFilterEnabled);
+        if(_.indexOf(doc['sm_field_tags:name'], tag.title) < 0 ||  filterLocal) {
           deadEnd.push(false);
           // console.log('count', tag.count);
         } else {
