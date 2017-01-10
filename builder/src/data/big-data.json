@@ -577,7 +577,7 @@
           "(tentative date) orientation and academic advising for new students in engineering..."],
         "ds_field_channels_event_date:value":"2017-01-03T14:00:00Z",
         "ds_field_channels_event_date:value2":"2017-01-03T14:00:00Z",
-        "ss_field_source_site:url":"mcgill.ca/importantdates",
+        "ss_field_source_site:url":"https://testbed13.ccs.mcgill.ca/wms",
         "sm_field_tags:name":["Academic Advising",
           "EN (Engineering)",
           "Orientation",
