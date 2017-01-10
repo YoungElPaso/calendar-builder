@@ -17,6 +17,8 @@ import calendarIcon from './calendar-icon.svg';
 // Yeah use lodash filtering to create a function that locally re-queries the JSON based on facets selected. No need to keep going back to the server.
 // import data from './data/new-test-events-lots.json';
 import data from './data/big-data.json';
+// Get the data for just top 10 facets...
+import tendata from './data/big-data-max-row-1000-max-facet-10.json'
 // Bring in the css.
 import './App.css';
 
@@ -35,30 +37,63 @@ class App extends Component {
 
     // TODO: state should be empty and loaded from localstorage, if we want something fancy.  
     if (!this.state) {
-      this.state = {tags: [], query: '', selected_tags: {}};
+      this.state = {
+        tags: [],
+        query: '',
+        selected_tags: {},
+        onlyTopTenEnabled: false,
+        onlyLocalEnabled: false,
+        onlyLocalVal: 'https://testbed13.ccs.mcgill.ca/wms'
+      };
     }
     this.handleTagClick = this.handleTagClick.bind(this);
     this.onlyLocal = this.onlyLocal.bind(this);
     this.onlyTopTen = this.onlyTopTen.bind(this);
+  }
+  // Blows away all tag states.
+  reset(){
+    this.setState({selected_tags:{}});
   }
 
   // Toggles the onlyLocal filtering.
   onlyLocal(){
     console.log('parent local');
     if (this.state.onlyLocalEnabled === false || !this.state.onlyLocalEnabled) {
-      this.setState({onlyLocalEnabled: true})
+      this.setState({onlyLocalEnabled: true}, function(){
+        // This is kinda crappy.  Too high-level, just blasts away everything...
+        this.getAllTags(data);
+      });
     } else {
-      this.setState({onlyLocalEnabled: false})
+      this.setState({onlyLocalEnabled: false}, function(){
+        // This is kinda crappy.  Too high-level, just blasts away everything...
+        // Need a lower level tag and doc filtering not smash it all.
+        this.getAllTags(data);
+      });
     }
     // TODO: need the actual callback after setState to do filtering and update tags.
   }
-  // Toggles the onlyLocal filtering.
+  // Toggles the top ten filtering.
   onlyTopTen(){
-    console.log('parent TopTen');
     if (this.state.onlyTopTenEnabled === false || !this.state.onlyTopTenEnabled) {
-      this.setState({onlyTopTenEnabled: true})
+      this.setState({onlyTopTenEnabled: true}, function(){
+        // Changes whole query and resets UI. Daunting!
+        console.log('changing top-ten to true');
+        console.log(this.state.onlyTopTenEnabled);
+        console.log('gettin moar/diff data!');
+        // Think I need to blow away all the other states... Need a reset?
+        this.reset();
+        // this.getAllTags(tendata);
+
+        // Dont really need tendata - its just a big data haul to update just the tags, handle it all front-end instead.
+        this.getAllTags(data);
+      });
     } else {
-      this.setState({onlyTopTenEnabled: false})
+      this.setState({onlyTopTenEnabled: false}, function(){
+        console.log(this.state.onlyTopTenEnabled);
+        // Resets to original query.
+        this.reset();
+        this.getAllTags(data);
+      });
     }
     // TODO: need the actual callback after setState to do filtering and update tags.
   }
@@ -72,7 +107,14 @@ class App extends Component {
       var deadEnd = [];
       tag.count = 0;
       _.each(docs, function(doc) {
-        if(_.indexOf(doc['sm_field_tags:name'], tag.title) < 0) {
+        // TODO make this not hardcoded....and better var name
+        // var extry = doc['ss_field_source_site:url'] !== 'https://testbed13.ccs.mcgill.ca/wms';
+        var extry = false;
+        if (that.state.onlyLocalEnabled) {
+            extry = doc['ss_field_source_site:url'] !== that.state.onlyLocalVal;
+        }
+
+        if(_.indexOf(doc['sm_field_tags:name'], tag.title) < 0 || extry) {
           deadEnd.push(false);
           // console.log('count', tag.count);
         } else {
@@ -178,6 +220,11 @@ class App extends Component {
           title: entry
         })
       }
+      // Intevene to expose only top-ten tags.
+      if (this.state.onlyTopTenEnabled) {
+        // Changing it to 15-bad variable and function names now...
+        newTags = _.slice(newTags, 0, 15);
+      }
       return newTags;
     });
     this.setState({
@@ -203,10 +250,9 @@ class App extends Component {
         <p className="App-intro">
           Build a calendar by selecting available tags.  NB: tags that have no events associated with them in this set of events are disabled. Selecting tags narrows the set.
         </p>
-        <h3> Filtering Options: </h3>
+        <h3>Calendar building options: </h3>
         <Local onClick={this.onlyLocal} enabled={this.state.onlyLocalEnabled} label="Only local content:" />
-        <TopTen onClick={this.onlyTopTen} label="Only top 10: tags" enabled={this.state.onlyTopTenEnabled}/>
-        <div>Show only the top 10 tags: true</div>
+        <TopTen onClick={this.onlyTopTen} label="Showing Only top 15 tags" enabled={this.state.onlyTopTenEnabled}/>
         <TagList tags={this.state.tags} clicky={this.handleTagClick} selected={this.state.selected_tags}/>
         <Calendar id="search-calendar"/>
       </div>
@@ -286,7 +332,7 @@ class OptionToggle extends Component {
     var enabled = this.props.enabled || false;
     return (
       <div className={'option-toggle ' + 'option-' + enabled} onClick={this.props.onClick}>
-        {this.props.label} {enabled.toString()}
+        {this.props.label} {/*enabled.toString()*/}
       </div>
     )
   }
@@ -310,7 +356,12 @@ export default App;
  * - Have a local/non-local toggle - should cycle through all tags and disable empty ones like updateTags does regularly
  * - Top 10 tag toggle? Simplifies the UI, but limits utility. Still might be useful to think about since it sorta forces content creators to think in terms of top-ten or twenty tags (this would work well with sorting)
  * - Investigate solr query more - i.e. limit tags to top 10? see about getting a lot more docs, and maybe facet count for that result set, not the total result set. That would be a key distinction.  
+ * - Seems can get top 10 facets - but that should trigger a whole new data query/source. Which is ok. TODO: add top-10 funcitonality that gets new data set with only top-10 facets.  Hmmm...issue with this is that facet changes (in count) doesn't limit results, just the returned facets so its not really worth another trip to the server....99% of the data is identical. Easier tho...
+ * - So, showing only top 15 or whatever is interesting in that as you click a facet there should be a new top 15 and we could do this by ordering tags on number before slicing, BUT if we don't, then it reveals what events are COMMON to the top 15 only, emphasizing those categories always, which in fact is useful
+ * - Arguably top 15 should be enabled by default.
  * - Maybe order the tags in alphabetical order.
  * - If alphabetical maybe ditch the numbers? Are they misleading?
  * - TODO: split this file up, its getting fugly. App  component should have own file.
+ * - Only local should be a lower lvl toggle like facets, top 10 facets should be higher level?
+ * - Hrm, these top 15 and only local complicate matters - they are ANDS right? and are they on same level as any other filter? Not the top 15 I guess...only local should be/could be a tag (facet) like any other I'm sure?
  */
