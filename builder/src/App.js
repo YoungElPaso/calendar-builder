@@ -60,14 +60,20 @@ class App extends Component {
     console.log('parent local');
     if (this.state.onlyLocalEnabled === false || !this.state.onlyLocalEnabled) {
       this.setState({onlyLocalEnabled: true}, function(){
-        // This is kinda crappy.  Too high-level, just blasts away everything...
-        this.getAllTags(data);
+        // // This is kinda crappy.  Too high-level, just blasts away everything...
+        // // this.getAllTags(data);
+        
+        // Better approach would be same as handling tag click...
+        // Now filter the data.
+        // console.log(this.state.selected_tags);
+        this.filterData(data, this.updateCal);
       });
     } else {
       this.setState({onlyLocalEnabled: false}, function(){
         // This is kinda crappy.  Too high-level, just blasts away everything...
         // Need a lower level tag and doc filtering not smash it all.
-        this.getAllTags(data);
+        // this.getAllTags(data);
+        this.filterData(data, this.updateCal);
       });
     }
     // TODO: need the actual callback after setState to do filtering and update tags.
@@ -143,8 +149,11 @@ class App extends Component {
     // console.log(this.state.selected_tags);
     var filterDocs = data.response.docs;
     var filters = this.state.selected_tags;
+    var doLocalFilter = this.state.onlyLocalEnabled;
+    var onlyLocalVal = this.state.onlyLocalVal;
+
     // Only do filtering if there are any filters.
-    if (!_.isEmpty(filters)) {
+    if (!_.isEmpty(filters) || doLocalFilter) {
       // Filter through each doc, and check if its tags match ours selected.
       filterDocs = _.filter(filterDocs, function(obj) {
         var includeChecks = [];
@@ -154,6 +163,16 @@ class App extends Component {
           // array that if includes one false, excludes the doc (AND operator)
           includeChecks.push(_.indexOf(obj['sm_field_tags:name'], filter.title) >= 0);
         });
+        // New! Filters aren't only tags. This tag stuff above ^ is way to tightly coupled...
+        // Gotta do a check for localOnly for includeChecks
+        var extry = true;
+        if (doLocalFilter) {
+            extry = obj['ss_field_source_site:url'] == onlyLocalVal;
+            includeChecks.push(extry);
+        }
+
+        //
+
         // TODO fix up this hard to follow boolean logic.  Make it more legible.
         console.log(obj.id, includeChecks, _.indexOf(includeChecks, false) >= 0);
         return _.indexOf(includeChecks, false) < 0;
@@ -165,7 +184,7 @@ class App extends Component {
     }
       // TODO update status of remaining tags (i.e. disable if they're dead ends.)
     this.updateTags(filterDocs);
-    // TODO fix up this callback design.  Kinda weird.
+    // TODO fix up this callback design.  Kinda weird. This cb should update calendar.
     cb(filterDocs);
     // var that = this;
     // _.each(this.state.selected_tags, function(val){
@@ -201,6 +220,7 @@ class App extends Component {
     
     }
   }
+
   getAllTags(data) {
     // TODO: need to filter out all the tags that have a 0 count, so probably need to bring back the counts....
     // console.log('mounted');
@@ -251,9 +271,9 @@ class App extends Component {
           Build a calendar by selecting available tags.  NB: tags that have no events associated with them in this set of events are disabled. Selecting tags narrows the set.
         </p>
         <h3>Calendar building options: </h3>
-        <Local onClick={this.onlyLocal} enabled={this.state.onlyLocalEnabled} label="Only local content:" />
-        <TopTen onClick={this.onlyTopTen} label="Showing Only top 15 tags" enabled={this.state.onlyTopTenEnabled}/>
+        <TopTen onClick={this.onlyTopTen} label="Create a calendar using just the top 15 tags" enabled={this.state.onlyTopTenEnabled}/>
         <TagList tags={this.state.tags} clicky={this.handleTagClick} selected={this.state.selected_tags}/>
+        <Local onClick={this.onlyLocal} enabled={this.state.onlyLocalEnabled} label="Only local content:" />
         <Calendar id="search-calendar"/>
       </div>
     );
@@ -364,4 +384,5 @@ export default App;
  * - TODO: split this file up, its getting fugly. App  component should have own file.
  * - Only local should be a lower lvl toggle like facets, top 10 facets should be higher level?
  * - Hrm, these top 15 and only local complicate matters - they are ANDS right? and are they on same level as any other filter? Not the top 15 I guess...only local should be/could be a tag (facet) like any other I'm sure?
+ * - Need to rethink the top 15. Its probably best as a visual aid - i.e. don't show a giant list of tags more so than an explicit filtering tool, i.e. it shouldn't reset your search just cause you clicked on it. Or should it?
  */
