@@ -41,7 +41,8 @@ class App extends Component {
         tags: [],
         query: '',
         selected_tags: {},
-        onlyTopTenEnabled: false,
+        onlyTopTenEnabled: true,
+        hideTagsAfter: 15,
         onlyLocalEnabled: false,
         onlyLocalVal: 'https://testbed13.ccs.mcgill.ca/wms'
       };
@@ -81,24 +82,48 @@ class App extends Component {
   // Toggles the top ten filtering.
   onlyTopTen(){
     if (this.state.onlyTopTenEnabled === false || !this.state.onlyTopTenEnabled) {
+      var that = this;
       this.setState({onlyTopTenEnabled: true}, function(){
         // Changes whole query and resets UI. Daunting!
         console.log('changing top-ten to true');
         console.log(this.state.onlyTopTenEnabled);
         console.log('gettin moar/diff data!');
         // Think I need to blow away all the other states... Need a reset?
-        this.reset();
+        // this.reset();
         // this.getAllTags(tendata);
 
         // Dont really need tendata - its just a big data haul to update just the tags, handle it all front-end instead.
-        this.getAllTags(data);
+        // this.getAllTags(data);
+
+        // Now just a glorified show/hide...
+        _.each(that.state.tags, function(tag, whichTag) {
+          if (whichTag < that.state.hideTagsAfter) {
+            tag.visible = true;
+          } else {
+            tag.visible = false;
+          }
+          console.log(whichTag);
+          var tagUpdtd = that.state.tags[whichTag];
+          that.setState({tagUpdtd: tag});
+        });
+
       });
     } else {
+      var that = this;
       this.setState({onlyTopTenEnabled: false}, function(){
         console.log(this.state.onlyTopTenEnabled);
         // Resets to original query.
-        this.reset();
-        this.getAllTags(data);
+        // this.reset();
+        // this.getAllTags(data);
+
+        // Now just a glorified show/hide...
+        _.each(that.state.tags, function(tag, whichTag) {
+          tag.visible = true;
+          console.log(whichTag);
+          var tagUpdtd = that.state.tags[whichTag];
+          that.setState({tagUpdtd: tag});
+        });
+
       });
     }
     // TODO: need the actual callback after setState to do filtering and update tags.
@@ -136,6 +161,17 @@ class App extends Component {
         var tagUpdtd = that.state.tags[whichTag];
         that.setState({tagUpdtd: tag});
       } else {
+        // Handle case of hidden but useful tag. TODO: this needs to be done probably out of the loop and better. I.e. show all tags and explicitly trigger override. Blah...this is bad...
+
+        // If its not visible, currently disabled, top15 is on and it should be enabled and visible and its NOT in the top 15
+
+
+        // if (whichTag > that.state.hideTagsAfter && tag.enabled == true && tag.visible == true) {
+        //   that.setState({onlyTopTenEnabled: false});
+        //   tag.visible = true;
+        // }
+        //
+
         tag.enabled = 'enabled';
         var tagUpdtd = that.state.tags[whichTag];
         that.setState({tagUpdtd: tag});
@@ -230,20 +266,33 @@ class App extends Component {
     // console.log(data);
     // console.log(raw);
     var newTags = [];
+    
+    if (this.state.onlyTopTenEnabled) {
+      var isVisVal = this.state.hideTagsAfter;
+    } else  {
+      var isVisVal = null;
+    }
+
     raw.map((entry, key)=>{
       // Ugh. the facet_field object is stoopid!
       // Just getting the tags, not the counts. Although the counts might be usefull...
       // TODO: investigate using just the tags with a count over certain threshold, will fix issue where we return a million tags. Although politics will ruin that plan :P
       if (typeof(entry) === 'string') {
+        // Argh! my beautiful simple code is turning into spaghetti!
+        var isVis = isVisVal? isVisVal > key / 2 : true;
+        // console.log(key / 2, isVis);
         newTags.push({
           id: shortid.generate(),
-          title: entry
+          title: entry,
+          visible: isVis
         })
       }
       // Intevene to expose only top-ten tags.
       if (this.state.onlyTopTenEnabled) {
         // Changing it to 15-bad variable and function names now...
-        newTags = _.slice(newTags, 0, 15);
+        // newTags = _.slice(newTags, 0, 15);
+
+        // Just gonna make the others invisible.
       }
       return newTags;
     });
@@ -267,13 +316,19 @@ class App extends Component {
           <img src={calendarIcon} className="App-logo" alt="logo" />
           <h2>Welcome to Calendar Builder 1.0</h2>
         </div>
+        
         <p className="App-intro">
           Build a calendar by selecting available tags.  NB: tags that have no events associated with them in this set of events are disabled. Selecting tags narrows the set.
         </p>
-        <h3>Calendar building options: </h3>
-        <TopTen onClick={this.onlyTopTen} label="Create a calendar using just the top 15 tags" enabled={this.state.onlyTopTenEnabled}/>
+        
+        
         <TagList tags={this.state.tags} clicky={this.handleTagClick} selected={this.state.selected_tags}/>
-        <Local onClick={this.onlyLocal} enabled={this.state.onlyLocalEnabled} label="Only local content:" />
+
+        <TopTen onClick={this.onlyTopTen} label='Show fewer tags' enabled={this.state.onlyTopTenEnabled}/>
+        
+        <h4>Additional filters</h4>
+        <Local onClick={this.onlyLocal} enabled={this.state.onlyLocalEnabled} label="Only include locally created content" />
+        
         <Calendar id="search-calendar"/>
       </div>
     );
@@ -300,7 +355,7 @@ class TagList extends Component {
         <h3>Available tags:</h3>
         {
           this.props.tags.map((tag) =>
-            <Tag key={tag.id} title={tag.title} onClick={clicky.bind(this, tag)} toggle={_.has(selected, tag.id)} enabled={tag.enabled || 'enabled'} count={tag.count} />
+            <Tag key={tag.id} title={tag.title} onClick={clicky.bind(this, tag)} toggle={_.has(selected, tag.id)} enabled={tag.enabled || 'enabled'} visible={tag.visible} count={tag.count} />
           )
         }
       </div>
@@ -322,7 +377,7 @@ class Tag extends Component {
   }
   render () {
     return (
-      <div className={'tag selected-'+ this.props.toggle + ' ' + this.props.enabled } onClick={this.props.onClick}>
+      <div className={'tag selected-'+ this.props.toggle + ' ' + this.props.enabled + ' viz-' + this.props.visible} onClick={this.props.onClick}>
       {this.props.title} <span className="count">{this.props.count}</span>
       </div>
     );
@@ -352,7 +407,10 @@ class OptionToggle extends Component {
     var enabled = this.props.enabled || false;
     return (
       <div className={'option-toggle ' + 'option-' + enabled} onClick={this.props.onClick}>
-        {this.props.label} {/*enabled.toString()*/}
+        {this.props.label}&nbsp;
+        <span className="status">
+          {enabled.toString()}
+        </span>
       </div>
     )
   }
@@ -384,5 +442,6 @@ export default App;
  * - TODO: split this file up, its getting fugly. App  component should have own file.
  * - Only local should be a lower lvl toggle like facets, top 10 facets should be higher level?
  * - Hrm, these top 15 and only local complicate matters - they are ANDS right? and are they on same level as any other filter? Not the top 15 I guess...only local should be/could be a tag (facet) like any other I'm sure?
- * - Need to rethink the top 15. Its probably best as a visual aid - i.e. don't show a giant list of tags more so than an explicit filtering tool, i.e. it shouldn't reset your search just cause you clicked on it. Or should it?
+ * - Need to rethink the top 15. Its probably best as a visual aid - i.e. don't show a giant list of tags more so than an explicit filtering tool, i.e. it shouldn't reset your search just cause you clicked on it. Or should it? Yeah pretty sure it should just be a way to collapse all but top 15 - i.e. set them to some hidden status (NOT selection, just hidden)
+ * - TODO: need to make sure state is transferable - i.e. its saved and can be loaded anew (i.e. the tool can load a state)
  */
