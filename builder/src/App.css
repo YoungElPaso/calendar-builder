@@ -54,7 +54,8 @@
   background: #FFF;
   opacity: 0.3;
 }
-.tag span.count {
+.tag span.count,
+.option-toggle span.status {
   display:inline-block;
   background: #fff;
   border-radius: 0.25em;
@@ -68,4 +69,8 @@
   background: #AAA;
   margin: 1em;
   padding: 0.25em;
+}
+
+.viz-false {
+  display: none;
 }
