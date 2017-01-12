@@ -1,4 +1,12 @@
 import React, { Component } from 'react';
+
+// Using some components from blueprintjs for notices etc.
+import {
+    Button,
+    Toaster,
+    Position
+} from "@blueprintjs/core";
+
 // Need fullcalendar.
 import 'fullcalendar';
 // Think we need jQuery.
@@ -51,6 +59,19 @@ class App extends Component {
     this.onlyLocal = this.onlyLocal.bind(this);
     this.onlyTopTen = this.onlyTopTen.bind(this);
   }
+
+  // Create a toaster for 'toast messages'.
+  createToaster(){
+    var toastHolder = document.getElementsByClassName('toasties')[0];
+    console.log('tastholder', toastHolder);
+    // Toast?
+    this.toast = Toaster.create({
+      className: "my-toaster pt-dark",
+      position: Position.Bottom,
+      message: ''
+    }, toastHolder);
+  }
+
   // Blows away all tag states.
   reset(){
     this.setState({selected_tags:{}});
@@ -91,6 +112,12 @@ class App extends Component {
   }
   // Toggles the top ten filtering.
   onlyTopTen(){
+    this.toast.show({message:'asdfsdf'});
+    // var t = Toaster.create({message: 'foobar'});
+
+    // console.log(t);
+    // t.show();
+
     // Check if selected tags would become invisible if most are collapsed. Ie. if this is activated.
     var selected = this.state.selected_tags;
     var ceiling = this.state.hideTagsAfter;
@@ -278,6 +305,8 @@ class App extends Component {
   }
 
   handleTagClick(tag) {
+
+
     if (tag.enabled !== 'disabled') {
       // Update the tag display and the state to hold which tags are selected.
       // console.log('tag clicked', tag);
@@ -353,6 +382,9 @@ class App extends Component {
     // Get all of the tags for the UI.
     // Run update on all tags right away?
     this.getAllTags(data);
+    
+    // Init the bloody toaster.
+    this.createToaster();
   }
   render() {
     return (
@@ -365,6 +397,8 @@ class App extends Component {
         <p className="App-intro">
           Build a calendar by selecting available tags.  NB: tags that have no events associated with them in this set of events are disabled. Selecting tags narrows the set.
         </p>
+
+        <div className="toasties"></div>
 
         <TagList tags={this.state.tags} clicky={this.handleTagClick} selected={this.state.selected_tags}/>
 
@@ -531,4 +565,5 @@ export default App;
  * TODO: save the state! Load the state!
  * TODO: add some feedback if down to 0 tags/results (maybe a blueprint toast?)
  * TODO: add a toast feedback for total num of filtered docs.
+ * TODO: fix up blueprint css - it overrides a bunch of stuff in ways I dont like.
  */
