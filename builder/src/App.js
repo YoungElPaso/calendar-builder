@@ -529,4 +529,6 @@ export default App;
  * - TODO: need to make sure state is transferable - i.e. its saved and can be loaded anew (i.e. the tool can load a state)
  * TODO: find out about UI elements (like switches etc, use Blueprint npm maby?)
  * TODO: save the state! Load the state!
+ * TODO: add some feedback if down to 0 tags/results (maybe a blueprint toast?)
+ * TODO: add a toast feedback for total num of filtered docs.
  */
