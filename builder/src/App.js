@@ -57,9 +57,9 @@ class App extends Component {
   }
 
   // Toggles the onlyLocal filtering.
-  onlyLocal(){
+  onlyLocal(enabling){
     console.log('parent local');
-    if (this.state.onlyLocalEnabled === false || !this.state.onlyLocalEnabled) {
+    if (this.state.onlyLocalEnabled === false || !this.state.onlyLocalEnabled ||enabling == true) {
       this.setState({onlyLocalEnabled: true}, function(){
         // // This is kinda crappy.  Too high-level, just blasts away everything...
         // // this.getAllTags(data);
@@ -68,6 +68,16 @@ class App extends Component {
         // Now filter the data.
         // console.log(this.state.selected_tags);
         this.filterData(data, this.updateCal);
+
+        // Might wanna consider overriding hide/show tags if some are hidden.
+        // But in practise this is super confusing and doesn't resplect the users choice.  A better option would be a notice...'
+        // TODO: update the show fewer tags with number of active hidden tags.
+        if (this.state.hasHiddenTags == true && this.state.onlyTopTenEnabled) {
+          // this.setState({onlyTopTenEnabled: false}, function(){
+          //   this.onlyTopTen();
+          // });
+          // this.onlyTopTen();
+        }
       });
     } else {
       this.setState({onlyLocalEnabled: false}, function(){
@@ -81,7 +91,16 @@ class App extends Component {
   }
   // Toggles the top ten filtering.
   onlyTopTen(){
-    if (this.state.onlyTopTenEnabled === false || !this.state.onlyTopTenEnabled) {
+    // Check if selected tags would become invisible if most are collapsed. Ie. if this is activated.
+    var selected = this.state.selected_tags;
+    var ceiling = this.state.hideTagsAfter;
+    var cantHide = false; 
+    cantHide = _.some(selected, function(tag){
+      // TODO: return some message about id being disbaled!
+      return tag.num > ceiling;
+    });
+
+    if ((this.state.onlyTopTenEnabled === false || !this.state.onlyTopTenEnabled) && !cantHide) {
       var that = this;
       this.setState({onlyTopTenEnabled: true}, function(){
         // Changes whole query and resets UI. Daunting!
@@ -102,7 +121,7 @@ class App extends Component {
           } else {
             tag.visible = false;
           }
-          console.log(whichTag);
+          // console.log(whichTag);
           var tagUpdtd = that.state.tags[whichTag];
           that.setState({tagUpdtd: tag});
         });
@@ -111,7 +130,7 @@ class App extends Component {
     } else {
       var that = this;
       this.setState({onlyTopTenEnabled: false}, function(){
-        console.log(this.state.onlyTopTenEnabled);
+        // console.log(this.state.onlyTopTenEnabled);
         // Resets to original query.
         // this.reset();
         // this.getAllTags(data);
@@ -119,7 +138,7 @@ class App extends Component {
         // Now just a glorified show/hide...
         _.each(that.state.tags, function(tag, whichTag) {
           tag.visible = true;
-          console.log(whichTag);
+          // console.log(whichTag);
           var tagUpdtd = that.state.tags[whichTag];
           that.setState({tagUpdtd: tag});
         });
@@ -155,12 +174,17 @@ class App extends Component {
         };
       });
       // TODO clean up these conditionals, kinda ugly.
-      if (_.indexOf(deadEnd, true) < 0) {
-        console.log('real deadend!', tag.title);
-        tag.enabled = 'disabled';
+      if (_.indexOf(deadEnd, true) < 0 ) {
+        // console.log('real deadend!', tag.title);
+        tag.enabled = 'disabled';    
         var tagUpdtd = that.state.tags[whichTag];
         that.setState({tagUpdtd: tag});
-      } else {
+      } 
+      // else if (that.state.onlyTopTenEnabled && whichTag >= that.state.hideTagsAfter) {
+      //   // Need to double check if we have topten type filter going on.
+      //   // tag.enabled = 'disabled';
+      // }
+      else {
         // Handle case of hidden but useful tag. TODO: this needs to be done probably out of the loop and better. I.e. show all tags and explicitly trigger override. Blah...this is bad...
 
         // If its not visible, currently disabled, top15 is on and it should be enabled and visible and its NOT in the top 15
@@ -172,7 +196,26 @@ class App extends Component {
         // }
         //
 
+        // If showing fewer, but we need to see one that is necessry (due to other filter), then we should show all, including that one.
+        // console.log(tag.enabled);
+        // console.log = function(){};
+        // if (that.state.onlyTopTenEnabled && whichTag >= that.state.hideTagsAfter && tag.visible == false && tag.enabled=='enabled') {
+        //   console.log('hidey hole!');
+        //   that.setState({onlyTopTenEnabled: false});
+        //   // show em all.
+        //   tag.visible = true;
+        // }
+
+
         tag.enabled = 'enabled';
+
+        // Maybe flag that there are hidden tags in state? That would work but seems like cheating...But then again, some of these conditions should be an extra, optional layer. Annoying all the same.
+        
+        if (tag.visible == false && tag.enabled == 'enabled') {
+          console.log('hidden tags!');
+          that.setState({hasHiddenTags: true});
+        }
+
         var tagUpdtd = that.state.tags[whichTag];
         that.setState({tagUpdtd: tag});
       }
@@ -210,7 +253,7 @@ class App extends Component {
         //
 
         // TODO fix up this hard to follow boolean logic.  Make it more legible.
-        console.log(obj.id, includeChecks, _.indexOf(includeChecks, false) >= 0);
+        // console.log(obj.id, includeChecks, _.indexOf(includeChecks, false) >= 0);
         return _.indexOf(includeChecks, false) < 0;
         // return true;
       });
@@ -282,9 +325,11 @@ class App extends Component {
         var isVis = isVisVal? isVisVal > key / 2 : true;
         // console.log(key / 2, isVis);
         newTags.push({
+          num: key/2,
           id: shortid.generate(),
           title: entry,
-          visible: isVis
+          visible: isVis,
+          enabled: 'disabled'
         })
       }
       // Intevene to expose only top-ten tags.
@@ -320,14 +365,34 @@ class App extends Component {
         <p className="App-intro">
           Build a calendar by selecting available tags.  NB: tags that have no events associated with them in this set of events are disabled. Selecting tags narrows the set.
         </p>
-        
-        
+
         <TagList tags={this.state.tags} clicky={this.handleTagClick} selected={this.state.selected_tags}/>
 
-        <TopTen onClick={this.onlyTopTen} label='Show fewer tags' enabled={this.state.onlyTopTenEnabled}/>
+        <TopTen
+          onClick={this.onlyTopTen} optname='showmore'
+          enabledString='Show more tags'
+          disabledString='Show less tags'
+          enabled={this.state.onlyTopTenEnabled}
+        />
         
         <h4>Additional filters</h4>
-        <Local onClick={this.onlyLocal} enabled={this.state.onlyLocalEnabled} label="Only include locally created content" />
+        <Local
+          extraClass='switch-left'
+          onClick={()=> this.onlyLocal(true)}
+          enabled={this.state.onlyLocalEnabled == true}
+          label="Local content"
+          disabledString='Only include locally created content'
+          
+        />
+
+        <AllSources
+          extraClass='switch-right'
+          onClick={()=> this.onlyLocal(false)}
+          enabled={this.state.onlyLocalEnabled == false}
+          label="All content"
+          
+          disabledString='Include all content'
+        />
         
         <Calendar id="search-calendar"/>
       </div>
@@ -355,7 +420,7 @@ class TagList extends Component {
         <h3>Available tags:</h3>
         {
           this.props.tags.map((tag) =>
-            <Tag key={tag.id} title={tag.title} onClick={clicky.bind(this, tag)} toggle={_.has(selected, tag.id)} enabled={tag.enabled || 'enabled'} visible={tag.visible} count={tag.count} />
+            <Tag key={tag.id} title={tag.title} onClick={clicky.bind(this, tag)} toggle={_.has(selected, tag.id)} enabled={tag.enabled || 'disabled'} visible={tag.visible} count={tag.count} />
           )
         }
       </div>
@@ -404,19 +469,37 @@ class OptionToggle extends Component {
     this.props = props;
   }
   render () {
+    // We can use a bunch of these props to have very dynamic labels.
+    // Two such toggles, with states that are opposites can act like a switch.
+  
     var enabled = this.props.enabled || false;
+    var optname = this.props.optname || null;
+    var label = this.props.label;
+    var enabledString = this.props.enabledString || null; 
+    var disabledString = this.props.disabledString || null
+
+    var optXtraClass = this.props.extraClass || null;
+
+    if (disabledString && enabledString) {
+      if (enabled) {
+        label = this.props.enabledString;
+      } else {
+        label = this.props.disabledString;
+      }
+    }
     return (
-      <div className={'option-toggle ' + 'option-' + enabled} onClick={this.props.onClick}>
-        {this.props.label}&nbsp;
-        <span className="status">
-          {enabled.toString()}
-        </span>
+      <div className={'option-toggle option-xtras-' + optXtraClass + ' option-name-' + optname + ' option-' + enabled} onClick={this.props.onClick}>
+        {label}&nbsp;
       </div>
     )
   }
 }
 
 class Local extends OptionToggle {
+}
+
+class AllSources extends OptionToggle {
+
 }
 
 class TopTen extends OptionToggle {
@@ -444,4 +527,6 @@ export default App;
  * - Hrm, these top 15 and only local complicate matters - they are ANDS right? and are they on same level as any other filter? Not the top 15 I guess...only local should be/could be a tag (facet) like any other I'm sure?
  * - Need to rethink the top 15. Its probably best as a visual aid - i.e. don't show a giant list of tags more so than an explicit filtering tool, i.e. it shouldn't reset your search just cause you clicked on it. Or should it? Yeah pretty sure it should just be a way to collapse all but top 15 - i.e. set them to some hidden status (NOT selection, just hidden)
  * - TODO: need to make sure state is transferable - i.e. its saved and can be loaded anew (i.e. the tool can load a state)
+ * TODO: find out about UI elements (like switches etc, use Blueprint npm maby?)
+ * TODO: save the state! Load the state!
  */
