@@ -4,7 +4,10 @@ import React, { Component } from 'react';
 import {
     Button,
     Toaster,
-    Position
+    Intent,
+    Position,
+    Popover,
+    PopoverInteractionKind
 } from "@blueprintjs/core";
 
 // Need fullcalendar.
@@ -63,12 +66,13 @@ class App extends Component {
   // Create a toaster for 'toast messages'.
   createToaster(){
     var toastHolder = document.getElementsByClassName('toasties')[0];
-    console.log('tastholder', toastHolder);
+    console.log('toastHolder', toastHolder);
     // Toast?
     this.toast = Toaster.create({
-      className: "my-toaster pt-dark",
-      position: Position.Bottom,
-      message: ''
+      className: "my-toaster",
+      position: Position.TOP,
+      timeout: 3000,
+      inline: false,
     }, toastHolder);
   }
 
@@ -79,56 +83,70 @@ class App extends Component {
 
   // Toggles the onlyLocal filtering.
   onlyLocal(enabling){
-    console.log('parent local');
-    if (this.state.onlyLocalEnabled === false || !this.state.onlyLocalEnabled ||enabling == true) {
-      this.setState({onlyLocalEnabled: true}, function(){
-        // // This is kinda crappy.  Too high-level, just blasts away everything...
-        // // this.getAllTags(data);
-        
-        // Better approach would be same as handling tag click...
-        // Now filter the data.
-        // console.log(this.state.selected_tags);
-        this.filterData(data, this.updateCal);
+    
+    // All interatctions should blow away pre-existing toast notices since they might be invalidated.
+    this.toast.clear();
 
-        // Might wanna consider overriding hide/show tags if some are hidden.
-        // But in practise this is super confusing and doesn't resplect the users choice.  A better option would be a notice...'
-        // TODO: update the show fewer tags with number of active hidden tags.
-        if (this.state.hasHiddenTags == true && this.state.onlyTopTenEnabled) {
-          // this.setState({onlyTopTenEnabled: false}, function(){
-          //   this.onlyTopTen();
-          // });
-          // this.onlyTopTen();
-        }
-      });
-    } else {
-      this.setState({onlyLocalEnabled: false}, function(){
-        // This is kinda crappy.  Too high-level, just blasts away everything...
-        // Need a lower level tag and doc filtering not smash it all.
-        // this.getAllTags(data);
-        this.filterData(data, this.updateCal);
-      });
+    if (enabling == true) {
+      if (this.state.onlyLocalEnabled == false) {
+        this.setState({onlyLocalEnabled: true}, function(){
+          // // This is kinda crappy.  Too high-level, just blasts away everything...
+          // // this.getAllTags(data);
+          
+          // Better approach would be same as handling tag click...
+          // Now filter the data.
+          // console.log(this.state.selected_tags);
+          this.filterData(data, this.updateCal);
+
+          // Might wanna consider overriding hide/show tags if some are hidden.
+          // But in practise this is super confusing and doesn't resplect the users choice.  A better option would be a notice...'
+          // TODO: update the show fewer tags with number of active hidden tags.
+          if (this.state.hasHiddenTags == true && this.state.onlyTopTenEnabled) {
+            // this.setState({onlyTopTenEnabled: false}, function(){
+            //   this.onlyTopTen();
+            // });
+            // this.onlyTopTen();
+          }
+        });
+      };
+    } else if (enabling == false) {
+      if (this.state.onlyLocalEnabled == true) {
+        this.setState({onlyLocalEnabled: false}, function(){
+          // This is kinda crappy.  Too high-level, just blasts away everything...
+          // Need a lower level tag and doc filtering not smash it all.
+          // this.getAllTags(data);
+          this.filterData(data, this.updateCal);
+        });
+      }
     }
     // TODO: need the actual callback after setState to do filtering and update tags.
   }
   // Toggles the top ten filtering.
   onlyTopTen(){
-    this.toast.show({message:'asdfsdf'});
-    // var t = Toaster.create({message: 'foobar'});
+    // All interatctions should blow away pre-existing toast notices since they might be invalidated.
+    this.toast.clear();
 
-    // console.log(t);
-    // t.show();
 
-    // Check if selected tags would become invisible if most are collapsed. Ie. if this is activated.
-    var selected = this.state.selected_tags;
-    var ceiling = this.state.hideTagsAfter;
+
+    // Overriding to disable this feature. Instead will provide feedback.
+    // Less user-hostile.
     var cantHide = false; 
-    cantHide = _.some(selected, function(tag){
-      // TODO: return some message about id being disbaled!
-      return tag.num > ceiling;
-    });
 
     if ((this.state.onlyTopTenEnabled === false || !this.state.onlyTopTenEnabled) && !cantHide) {
       var that = this;
+      // Check if selected tags would become invisible if most are collapsed. Ie. if this is activated.
+      var selected = this.state.selected_tags;
+      var ceiling = this.state.hideTagsAfter;
+      cantHide = _.some(selected, function(tag){
+        // TODO: return some message about id being disbaled!
+        that.toast.show({
+          message: 'Just an FYI, you might be hiding some of your selected tags!',
+          timeout: 4000,
+          intent: Intent.PRIMARY
+        })
+        return tag.num > ceiling;
+      });
+
       this.setState({onlyTopTenEnabled: true}, function(){
         // Changes whole query and resets UI. Daunting!
         console.log('changing top-ten to true');
@@ -203,7 +221,7 @@ class App extends Component {
       // TODO clean up these conditionals, kinda ugly.
       if (_.indexOf(deadEnd, true) < 0 ) {
         // console.log('real deadend!', tag.title);
-        tag.enabled = 'disabled';    
+        tag.enabled = 'disabled';
         var tagUpdtd = that.state.tags[whichTag];
         that.setState({tagUpdtd: tag});
       } 
@@ -240,7 +258,7 @@ class App extends Component {
         
         if (tag.visible == false && tag.enabled == 'enabled') {
           console.log('hidden tags!');
-          that.setState({hasHiddenTags: true});
+          // that.setState({hasHiddenTags: true});
         }
 
         var tagUpdtd = that.state.tags[whichTag];
@@ -248,6 +266,19 @@ class App extends Component {
       }
     });
     // console.log(that.state.tags);
+
+    // Do a simple check to see if all the filters are disabled, inform user they are.
+    var allDisabled = _.every(that.state.tags, function(tag, whichTag) {
+      console.log('enabled?', tag.enabled);
+      return tag.enabled == 'disabled';
+    });
+    if (allDisabled) {
+      this.toast.show({
+        message:'There are no valid tags for your filter. Try again.',
+        intent: Intent.PRIMARY,
+        timeout: 4000
+      });
+    }
   }
 
   filterData(data, cb) {
@@ -288,6 +319,12 @@ class App extends Component {
     } else {
       // console.log('non-filtered docs', filterDocs);
     }
+
+    // Probably should set the state to include filteredDocs count...
+      this.setState({foundDocsCount: filterDocs.length});
+
+    //
+
       // TODO update status of remaining tags (i.e. disable if they're dead ends.)
     this.updateTags(filterDocs);
     // TODO fix up this callback design.  Kinda weird. This cb should update calendar.
@@ -305,7 +342,8 @@ class App extends Component {
   }
 
   handleTagClick(tag) {
-
+    // All interatctions should blow away pre-existing toast notices since they might be invalidated.
+    this.toast.clear();
 
     if (tag.enabled !== 'disabled') {
       // Update the tag display and the state to hold which tags are selected.
@@ -427,8 +465,16 @@ class App extends Component {
           
           disabledString='Include all content'
         />
-        
-        <Calendar id="search-calendar"/>
+
+        <Popover
+          content={this.state.foundDocsCount + ' matching events.'}
+          isOpen={this.state.foundDocsCount > 0} 
+          interactionKind={PopoverInteractionKind.CLICK}
+          popoverClassName="pt-popover-content-sizing"
+          position={Position.TOP_LEFT}
+          useSmartPositioning={false}>
+          <Calendar id="search-calendar"/>
+        </Popover>
       </div>
     );
   }
@@ -566,4 +612,14 @@ export default App;
  * TODO: add some feedback if down to 0 tags/results (maybe a blueprint toast?)
  * TODO: add a toast feedback for total num of filtered docs.
  * TODO: fix up blueprint css - it overrides a bunch of stuff in ways I dont like.
+ * TODO: fix up allsources toggle - it toggles by itself. - Done 
+ * Also shuld dismiss toast. Also shorten toast length. - DONE 
+ * Also disable show less tag hindrance (due to hidden tags) - Done 
+ * Also change color of toast cause its a warning. - DONE
+ * TODO: add a popover for the calendar, showing total filtered docs. - Done
+ * TODO: add lokijs to save state locally
+ * TOOD: add a save state button
+ * TODO: add a reset state button
+ * TODO: add a list of saved states (searches)
+ * TODO: save saved states to localstorage
  */
