@@ -94,3 +94,17 @@
 .viz-false {
   display: none;
 }
+
+/*Toast overrides */
+
+.toasties {
+  position: relative;
+  /*top: 200px;*/
+}
+
+button.pt-button.pt-icon-cross {
+  /*background: red !important;*/
+}
+button.pt-button.pt-icon-cross::before {
+  content: 'X';
+}
