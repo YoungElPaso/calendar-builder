@@ -47,6 +47,31 @@ class Database {
         return colBool;
     }
 
+    writeToSaves(db, col, doc, op) {
+        var collection = db.getCollection(col);
+        // Make sure we catch errors.
+        if (op == 'w') {
+            try {
+                collection.insert(doc);
+                return true;
+            } catch (e) {
+                return false;
+            }
+        }
+        else if (op == 'u') {
+            // console.log('updated?');
+            // gotta retrieve original, map changes to it, then update.
+            var oldDoc = collection.where(function(obj){
+                return obj.titleHash == doc.titleHash;
+            });
+            oldDoc = oldDoc[0];
+            var newDoc = oldDoc;
+            newDoc.state = doc.state;
+            // console.log('updateing...', oldDoc, doc, newDoc); 
+            collection.update(newDoc);
+        }
+    }
+
     // holder = {};
 
     // static setResults(res) {
@@ -91,8 +116,8 @@ class Database {
                 db.addCollection('saves', 
                     {
                     clone: false,
-                    unique: 'id',
-                    indices:['id', 'state']
+                    unique: 'titleHash',
+                    indices:['id', 'title', 'titleHash', 'state']
                     }
                 );
                 db.saveDatabase();
