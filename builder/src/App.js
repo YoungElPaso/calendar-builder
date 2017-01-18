@@ -55,7 +55,8 @@ class App extends Component {
     // TODO: state should be empty and loaded from localstorage, if we want something fancy.  
     if (!this.state) {
       this.state = {
-        persist: false,
+        firstRun: true,
+        persist: true,
         saves: [
           {id:3, title:'fake saved item'},
           {id:4, title:'another fake item'}
@@ -69,10 +70,33 @@ class App extends Component {
         onlyLocalVal: 'https://testbed13.ccs.mcgill.ca/wms'
       };
     }
+    // Binds all tags.
     this.handleTagClick = this.handleTagClick.bind(this);
+    // Binds show/hide local content only button.
     this.onlyLocal = this.onlyLocal.bind(this);
+    // Binds show/hide tags button.
     this.onlyTopTen = this.onlyTopTen.bind(this);
+    // Binds reset button.
     this.reset  = this.reset.bind(this);
+    // Binds showHelp buttons.
+    this.showHelp = this.showHelp.bind(this);
+  }
+
+  // Just toggles 'firstRun' state variable and runs a callback.
+  toggleFirstRun(boolean, callback){
+    this.setState({firstRun: boolean}, callback);
+  }
+
+  showHelp(){
+    if(!this.state.showingHelp) {
+      this.setState({showingHelp: true}, function(){
+      console.log('toggle true', this.state);
+      });
+    } else {
+      this.setState({showingHelp: false}, function(){
+      console.log('toggle false');
+      });
+    }
   }
 
   // Create a toaster for 'toast messages'.
@@ -418,7 +442,7 @@ class App extends Component {
       }
       // Intevene to expose only top-ten tags.
       if (this.state.onlyTopTenEnabled) {
-        // Changing it to 15-bad variable and function names now...
+        // Changing it to 15-bad variabl@e and function names now...
         // newTags = _.slice(newTags, 0, 15);
 
         // Just gonna make the others invisible.
@@ -450,15 +474,31 @@ class App extends Component {
     // Run update on all tags right away?
     this.getAllTags(data);
 
+    // If persistance is on, we can check some things, like first run,
+    // and saved states.
     if(this.state.persist){
       // Instantiate a Database object (contains LokiJS DB and methods for writing/saving - used for persisting state).
       var dBObject = new Database();
       dBObject.create();
+
+      // If we have a db that has a collection already, then its not first run. 
+      var checkCol = dBObject.checkCollections(dBObject.holder, 'saves');
+      console.log('check the db object for basic stuff', checkCol);
+      if (checkCol) {
+        this.toggleFirstRun(false);
+      } else {
+        this.toggleFirstRun(true, function(){
+          console.log('first run is true!');
+          this.setState({showingHelp: true});
+        });
+      }
+
       var saves = dBObject.doLoad().results;
       // console.log('loaded db object', dBObject);
       // console.log('saves', saves);
       // Need to update state w/ list of saved states.
       this.listSaves(saves);
+
     }
 
     // Init the bloody toaster.
@@ -481,19 +521,32 @@ class App extends Component {
 
         <SavedList
           saves={this.state.saves}
-          clicky={this.reset}
-          currentCalTitle={this.state.currentCalTitle} 
+          reset={this.reset}
+          help={this.showHelp}
+          currentCalTitle={this.state.currentCalTitle}
+          saveStatus={this.state.saveStatus || null} 
         />
         <Dialog
-                    iconName="calendar"
-                    isOpen={this.state.isOpen || true}
-                    onClose={this.toggleDialog}
-                    title="Getting started"
-                >
-                <div className="pt-dialog-body">
-        To create a calendar, start by selecting some tags to narrow down the types of events you'd like to display. You can also choose the source of the events.  A preview of your calendar will appear based on your selections.
-        
-        </div>
+          iconName="calendar"
+          isOpen={this.state.showingHelp}
+          onClose={this.showHelp}
+          title="Getting Started"
+        >
+          <div className="pt-dialog-body">
+            <h5>Basics</h5>
+            <p>
+            To create a calendar, start by selecting some tags to narrow down the types of events you'd like to display. You can also choose the source of the events.  A preview of your calendar will appear based on your selections. <br/>
+            <em>NB. this is just a preview, the real calendar may vary slightly.</em>
+            </p>
+            <h5>Saving & Loading</h5>
+            <p>
+            If you like how your calendar appears, and are happy with your filters you can give it a name and save it.  Once there's at least one calendar saved, you can reload it next time you use the builder.
+            </p>
+            <hr />
+            <p>This message will self-destruct, but you can see it again, by clicking the <span className="pt-icon-standard pt-icon-help"></span> Help button in the top-right of the window.
+            </p>
+
+          </div>
         </Dialog>
 
         {/*
@@ -556,12 +609,17 @@ class SavedList extends Component {
   }
   render () {
     var currentCalTitle = this.props.currentCalTitle;
-    var clicky = this.props.clicky;
+    var reset = this.props.reset;
+    var showHelp = this.props.help;
+    var saves = this.props.saves || [];
+    var saveStatus = this.props.saveStatus;
+    var saveFileName = this.props.saveFileName || null;
+
     var menuContent = (
       <div className="saved-list">
           <Menu>
               {
-                this.props.saves.map((save) =>
+                saves.map((save) =>
                   <MenuItem
                     key={save.id}
                     text={save.title} 
@@ -586,9 +644,9 @@ class SavedList extends Component {
         {/*
         <EditableText className="pt-intent-primary" placeholder="Edit calendar name..." value={currentCalTitle} />*/}
 
-        <input className="pt-input" type="text" width="300px" placeholder="Enter a name for your calendar"/> 
-        
-        <button className="pt-button pt-intent-primary">Save </button>
+        <input className="pt-input" type="text" width="300px" placeholder="Enter a name for your calendar" value={saveFileName}/> 
+        &nbsp;
+        <button className={"pt-button pt-intent-primary pt-icon-document " + saveStatus}>Save</button>
       </div>
     )
 
@@ -607,22 +665,26 @@ class SavedList extends Component {
             <button className="pt-button pt-intent-primary">Save calendar</button>
           </Popover>*/}
           {saveField}
-          &nbsp;
+          <span className="pt-navbar-divider"></span>
           <Popover content={menuContent}
             interactionKind={PopoverInteractionKind.CLICK}
             popoverClassName="pt-popover-content-sizing"
             position={Position.BOTTOM}
             useSmartPositioning={false}>
-            <button className="pt-button pt-intent-primary">Load</button>
+            <button className="pt-button pt-intent-primary pt-icon-document-open">Load</button>
           </Popover>
-          &nbsp;
-          &nbsp;
         </div>
         <div className='pt-navbar-group pt-align-right'>
           <button
-            onClick={clicky.bind(this)}
-            className="pt-button pt-intent-primary onClick">
+            onClick={reset.bind(this)}
+            className="pt-button pt-intent-primary pt-icon-remove">
             Reset filters
+          </button>
+          <span className="pt-navbar-divider"></span>
+          <button
+            onClick={showHelp.bind(this)}
+            className="pt-button pt-intent-primary pt-icon-help">
+            Help
           </button>
         </div>
       </nav>
@@ -781,4 +843,5 @@ export default App;
  * TODO: add a spinner if necessary
  * TODO: Drupalify the whole thing (build and add to a module)
  * TODO: improve help text (also hide dialogue on not-first time)
+ * TODO: make the help text a variable that can be put in dialogue and also a help menu item -- Done
  */
