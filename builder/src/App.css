@@ -108,3 +108,9 @@ button.pt-button.pt-icon-cross {
 button.pt-button.pt-icon-cross::before {
   content: 'X';
 }
+
+.io-menu {
+  margin: 0 auto;
+  margin-top: 1em;
+  width: 98%;
+}
