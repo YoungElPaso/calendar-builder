@@ -776,8 +776,9 @@ export default App;
  * TODO: hookup load menu to loading state (do read on command)
  * TODO: save partial state (selected_tags and local should do it - basically everything that reset resets)
  * TODO: add save dialogue or other UI element (title)
- * TODO: launch toast on save confirm
+ * TODO: launch toast on save confirm - or other UI element (maybe save button turns green?)
  * TODO: actually show stuff on the calendar
  * TODO: add a spinner if necessary
  * TODO: Drupalify the whole thing (build and add to a module)
+ * TODO: improve help text (also hide dialogue on not-first time)
  */
