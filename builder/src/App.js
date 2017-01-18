@@ -10,6 +10,8 @@ import {
     Menu,
     MenuItem,
     Navbar,
+    EditableText,
+    Dialog,
     PopoverInteractionKind
 } from "@blueprintjs/core";
 
@@ -37,7 +39,6 @@ import data from './data/big-data.json';
 import tendata from './data/big-data-max-row-1000-max-facet-10.json'
 // Bring in the css.
 import './App.css';
-
 
 class App extends Component {
   constructor(props) {
@@ -99,6 +100,7 @@ class App extends Component {
   // Toggles the onlyLocal filtering.
   onlyLocal(enabling){
     
+
     // All interatctions should blow away pre-existing toast notices since they might be invalidated.
     this.toast.clear();
 
@@ -465,16 +467,40 @@ class App extends Component {
   render() {
     return (
       <div className="App">
+      {/*
+
         <div className="App-header">
           <img src={calendarIcon} className="App-logo" alt="logo" />
           <h2>Welcome to Calendar Builder 1.0</h2>
         </div>
+      */}
         
         {/*<p className="App-intro">
           Build a calendar by selecting available tags.  NB: tags that have no events associated with them in this set of events are disabled. Selecting tags narrows the set.
         </p>*/}
 
-        <SavedList saves={this.state.saves} clicky={this.reset} />
+        <SavedList
+          saves={this.state.saves}
+          clicky={this.reset}
+          currentCalTitle={this.state.currentCalTitle} 
+        />
+        <Dialog
+                    iconName="calendar"
+                    isOpen={this.state.isOpen || true}
+                    onClose={this.toggleDialog}
+                    title="Getting started"
+                >
+                <div className="pt-dialog-body">
+        To create a calendar, start by selecting some tags to narrow down the types of events you'd like to display. You can also choose the source of the events.  A preview of your calendar will appear based on your selections.
+        
+        </div>
+        </Dialog>
+
+        {/*
+          <h4>Getting started</h4>
+        <p>To create a calendar, start by selecting some tags to narrow down the types of events you'd like to display. You can also choose the source of the events.  A preview of your calendar will appear based on your selections.
+        </p>
+        */}
 
         <div className="toasties"></div>
 
@@ -487,7 +513,7 @@ class App extends Component {
           enabled={this.state.onlyTopTenEnabled}
         />
         
-        <h4>Additional filters</h4>
+        <h4>Sources</h4>
         <Local
           extraClass='switch-left'
           onClick={()=> this.onlyLocal(true)}
@@ -529,6 +555,7 @@ class SavedList extends Component {
     this.props = props;
   }
   render () {
+    var currentCalTitle = this.props.currentCalTitle;
     var clicky = this.props.clicky;
     var menuContent = (
       <div className="saved-list">
@@ -544,17 +571,49 @@ class SavedList extends Component {
           </Menu>
       </div>
     );
+    var saveDialogue = (
+      <div>
+        <label className="pt-label">
+          Enter a name for this calendar, e.g. 'Local winter & music'
+          <input className="pt-intent-primary pt-large pt-fill" type="text" width="300px" placeholder="Name"/>
+          <button className="pt-button pt-intent-primary">Save</button> 
+        </label>
+      </div>
+    )
+
+    var saveField = (
+      <div>
+        {/*
+        <EditableText className="pt-intent-primary" placeholder="Edit calendar name..." value={currentCalTitle} />*/}
+
+        <input className="pt-input" type="text" width="300px" placeholder="Enter a name for your calendar"/> 
+        
+        <button className="pt-button pt-intent-primary">Save </button>
+      </div>
+    )
+
     return (
-      <nav className="pt-navbar io-menu">
+      <nav className="pt-navbar pt-fixed-top">
         <div className='pt-navbar-group pt-align-left'>
-          <button className="pt-button pt-intent-primary">Save calendar</button>
+            <img src={calendarIcon} className="" alt="logo"  height="50px" />
+          <div className="pt-navbar-heading">
+            Calendar Builder v1.0
+          </div>
+          {/*<Popover content={saveDialogue}
+            interactionKind={PopoverInteractionKind.CLICK}
+            popoverClassName="pt-popover-content-sizing"
+            position={Position.RIGHT}
+            useSmartPositioning={false}>
+            <button className="pt-button pt-intent-primary">Save calendar</button>
+          </Popover>*/}
+          {saveField}
           &nbsp;
           <Popover content={menuContent}
             interactionKind={PopoverInteractionKind.CLICK}
             popoverClassName="pt-popover-content-sizing"
             position={Position.BOTTOM}
             useSmartPositioning={false}>
-            <button className="pt-button pt-intent-primary">Load calendar</button>
+            <button className="pt-button pt-intent-primary">Load</button>
           </Popover>
           &nbsp;
           &nbsp;
@@ -588,7 +647,7 @@ class TagList extends Component {
     var selected = this.props.selected;
     return (
       <div className={"tag-list"}>
-        <h3>Available tags:</h3>
+        <h4>Tags</h4>
         {
           this.props.tags.map((tag) =>
             <Tag key={tag.id} title={tag.title} onClick={clicky.bind(this, tag)} toggle={_.has(selected, tag.id)} enabled={tag.enabled || 'disabled'} visible={tag.visible} count={tag.count} />
@@ -708,9 +767,17 @@ export default App;
  * Also disable show less tag hindrance (due to hidden tags) - Done 
  * Also change color of toast cause its a warning. - DONE
  * TODO: add a popover for the calendar, showing total filtered docs. - Done
- * TODO: add lokijs to save state locally
- * TOOD: add a save state button
- * TODO: add a reset state button
- * TODO: add a list of saved states (searches)
- * TODO: save saved states to localstorage
+ * TODO: add lokijs to save state locally -- Done
+ * TOOD: add a save state button -- Done
+ * TODO: add a reset state button -- Done
+ * TODO: add a list of saved states (searches) -- Done
+ * 
+ * TODO: save saved states to localstorage (do writes)
+ * TODO: hookup load menu to loading state (do read on command)
+ * TODO: save partial state (selected_tags and local should do it - basically everything that reset resets)
+ * TODO: add save dialogue or other UI element (title)
+ * TODO: launch toast on save confirm
+ * TODO: actually show stuff on the calendar
+ * TODO: add a spinner if necessary
+ * TODO: Drupalify the whole thing (build and add to a module)
  */
