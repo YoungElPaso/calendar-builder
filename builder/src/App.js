@@ -519,8 +519,6 @@ class App extends Component {
       // Run with our new state.
       this.filterData(data, this.updateCal);
     });
-
-    // TODO: only thing is that the selected tags are not appearing as selected.
   }
 
   doSave(title){
