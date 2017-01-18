@@ -25,6 +25,8 @@ import jQuery from 'jquery';
 import _ from 'lodash';
 // Need shortid to create some nice short ids.
 import shortid from 'shortid';
+// Need hasha to create some hashes of titles for saving.
+import hasha from 'hasha';
 
 // Need a nice icon.
 import calendarIcon from './calendar-icon.svg';
@@ -58,8 +60,8 @@ class App extends Component {
         firstRun: true,
         persist: true,
         saves: [
-          {id:3, title:'fake saved item'},
-          {id:4, title:'another fake item'}
+          // {id:3, title:'fake saved item'},
+          // {id:4, title:'another fake item'}
         ],
         tags: [],
         query: '',
@@ -80,6 +82,19 @@ class App extends Component {
     this.reset  = this.reset.bind(this);
     // Binds showHelp buttons.
     this.showHelp = this.showHelp.bind(this);
+    // Binds save button.
+    this.doSave = this.doSave.bind(this);
+    // Binds handling title change.
+    this.handleTitleChange = this.handleTitleChange.bind(this);
+    // Binds loading from load menu.
+    this.doFileLoad = this.doFileLoad.bind(this);
+  }
+
+  handleTitleChange(event){
+    this.saveDirty(false);
+    this.setState({saveFileName: event.target.value}, function(){
+      console.log('newname', this.state.saveFileName);
+    });
   }
 
   // Just toggles 'firstRun' state variable and runs a callback.
@@ -114,6 +129,8 @@ class App extends Component {
   // Blows away all filter states.
   reset(){
     if (!_.isEmpty(this.state.selected_tags) || this.state.onlyLocalEnabled) {
+    // Again, blow away a save if actually resetting
+    this.saveDirty(false);
     this.setState({selected_tags: {}, onlyLocalEnabled: false}, function(){
       // console.log(this.state);
       this.filterData(data, this.updateCal);
@@ -123,7 +140,8 @@ class App extends Component {
 
   // Toggles the onlyLocal filtering.
   onlyLocal(enabling){
-    
+    // Again, new filter change, dirty.
+    this.saveDirty(false);  
 
     // All interatctions should blow away pre-existing toast notices since they might be invalidated.
     this.toast.clear();
@@ -383,6 +401,9 @@ class App extends Component {
   }
 
   handleTagClick(tag) {
+    // As soon as you click, you dirty the state that may have been saved.
+    this.saveDirty(false);
+
     // All interatctions should blow away pre-existing toast notices since they might be invalidated.
     this.toast.clear();
 
@@ -406,6 +427,12 @@ class App extends Component {
       });
     
     }
+  }
+
+
+  // Indicate things have changed since save 'dirty'
+  saveDirty(bool) {
+    this.setState({saveStatus: bool});
   }
 
   getAllTags(data) {
@@ -434,7 +461,8 @@ class App extends Component {
         // console.log(key / 2, isVis);
         newTags.push({
           num: key/2,
-          id: shortid.generate(),
+          // id: shortid.generate(), this is probably bad, cause its diff everytime we run the function!
+          id: hasha(entry),
           title: entry,
           visible: isVis,
           enabled: 'disabled'
@@ -469,6 +497,85 @@ class App extends Component {
       }
     )
   }
+
+  static dBObject = {}
+
+  doFileLoad(save) {
+    console.log('loading save', save);
+    // Get state out of the loaded save.
+    var st = save.state;
+    var selected_tags = st.selected_tags;
+    var onlyLocalEnabled = st.onlyLocalEnabled;
+    // Call reset.
+    this.reset();
+    // Set these elements of the state to be that of the save.
+    // & Set the saveFileName to be that of the save
+    this.setState(
+      {
+        selected_tags: selected_tags,
+        onlyLocalEnabled: onlyLocalEnabled,
+        saveFileName: save.title
+      }, function(){
+      // Run with our new state.
+      this.filterData(data, this.updateCal);
+    });
+
+    // TODO: only thing is that the selected tags are not appearing as selected.
+  }
+
+  doSave(title){
+    var title = this.state.saveFileName;
+    if (!title) {
+      // Set a default if one hasn't been entered.
+      title = 'Untitled'
+      this.setState({saveFileName: title});
+    }
+    console.log('doing a save!', title);
+    // var title = 'Foobar';
+    // Given that I'm basing it on titleHash and not id, probably should ditch id.
+    var selected_tags = this.state.selected_tags;
+    var onlyLocalEnabled = this.state.onlyLocalEnabled;
+    var testDoc = {
+      id: shortid.generate(),
+      title: title,
+      titleHash: hasha(title),
+      state: {
+        selected_tags: selected_tags,
+        onlyLocalEnabled: onlyLocalEnabled
+      }
+    }
+    var t = this;
+    var stat = this.dBObject.writeToSaves(this.dBObject.holder, 'saves', testDoc, 'w')
+    if (stat == true) {
+      t.dBObject.holder.saveDatabase();
+      t.dBObject.getResults(t.dBObject.holder, t.dBObject);
+      t.listSaves(t.dBObject.results);
+      console.log('new saving...');
+      // And update the UI.
+      t.toast.show({
+          message: 'Saved!',
+          timeout: 1000,
+          intent: Intent.SUCCESS
+        });
+      t.setState({saveStatus: 'pt-icon-saved pt-intent-success'}, function(){
+      });
+    } else {
+        var stat = this.dBObject.writeToSaves(this.dBObject.holder, 'saves', testDoc, 'u');
+        t.dBObject.holder.saveDatabase();
+        t.dBObject.getResults(t.dBObject.holder, t.dBObject);
+        t.listSaves(t.dBObject.results);
+        console.log(t.dBObject.results);
+      // Update the UI.
+        t.toast.show({
+            message: 'Updated!',
+            timeout: 1000,
+            intent: Intent.SUCCESS
+          });
+      t.setState({saveStatus: 'pt-icon-saved pt-intent-success'}, function(){
+      });
+    }
+  }
+
   componentDidMount() {
     // Get all of the tags for the UI.
     // Run update on all tags right away?
@@ -478,11 +585,11 @@ class App extends Component {
     // and saved states.
     if(this.state.persist){
       // Instantiate a Database object (contains LokiJS DB and methods for writing/saving - used for persisting state).
-      var dBObject = new Database();
-      dBObject.create();
+      this.dBObject = new Database();
+      this.dBObject.create();
 
       // If we have a db that has a collection already, then its not first run. 
-      var checkCol = dBObject.checkCollections(dBObject.holder, 'saves');
+      var checkCol = this.dBObject.checkCollections(this.dBObject.holder, 'saves');
       console.log('check the db object for basic stuff', checkCol);
       if (checkCol) {
         this.toggleFirstRun(false);
@@ -493,11 +600,14 @@ class App extends Component {
         });
       }
 
-      var saves = dBObject.doLoad().results;
+      var saves = this.dBObject.doLoad().results;
       // console.log('loaded db object', dBObject);
       // console.log('saves', saves);
       // Need to update state w/ list of saved states.
       this.listSaves(saves);
+
+      // Hrmm, probably should have a better place to hold our dBObject
+      // this.dBObject = dBObject;
 
     }
 
@@ -524,8 +634,12 @@ class App extends Component {
           reset={this.reset}
           help={this.showHelp}
           currentCalTitle={this.state.currentCalTitle}
-          saveStatus={this.state.saveStatus || null} 
-        />
+          saveStatus={this.state.saveStatus || null}
+          saveHandler={this.doSave}
+          saveFileName={this.state.saveFileName}
+          handleTitleChange = {this.handleTitleChange}
+          doFileLoad = {this.doFileLoad}
+      />
         <Dialog
           iconName="calendar"
           isOpen={this.state.showingHelp}
@@ -585,9 +699,12 @@ class App extends Component {
           disabledString='Include all content'
         />
 
+        {/* This popover needs work, not the best use maybe. redundant and it messes with focus cause overlay is everywhere. 
+          */}
         <Popover
           content={this.state.foundDocsCount + ' matching events.'}
-          isOpen={this.state.foundDocsCount > 0} 
+          isOpen={false /*this.state.foundDocsCount > 0*/}
+          inline={true} 
           interactionKind={PopoverInteractionKind.CLICK}
           popoverClassName="pt-popover-content-sizing"
           position={Position.TOP_LEFT}
@@ -613,16 +730,28 @@ class SavedList extends Component {
     var showHelp = this.props.help;
     var saves = this.props.saves || [];
     var saveStatus = this.props.saveStatus;
-    var saveFileName = this.props.saveFileName || null;
+    var saveHandler = this.props.saveHandler;
+    var saveFileName = this.props.saveFileName;
+    var handleTitleChange = this.props.handleTitleChange;
+    var doFileLoad = this.props.doFileLoad;
+    // console.log('here what we got saved...', saves);
 
+    var loadPlaceHolder = "";
+    if (saves.length < 1) {
+    loadPlaceHolder = (
+        <MenuItem text="No calendars to load yet!" />
+      )
+    }
     var menuContent = (
       <div className="saved-list">
           <Menu>
+              {loadPlaceHolder}
               {
                 saves.map((save) =>
                   <MenuItem
                     key={save.id}
-                    text={save.title} 
+                    text={save.title}
+                    onClick={doFileLoad.bind(this, save)}
                   />
                 )
               }
@@ -634,8 +763,8 @@ class SavedList extends Component {
         <label className="pt-label">
           Enter a name for this calendar, e.g. 'Local winter & music'
           <input className="pt-intent-primary pt-large pt-fill" type="text" width="300px" placeholder="Name"/>
-          <button className="pt-button pt-intent-primary">Save</button> 
         </label>
+          <button className="pt-button pt-intent-primary">Save</button> 
       </div>
     )
 
@@ -644,9 +773,14 @@ class SavedList extends Component {
         {/*
         <EditableText className="pt-intent-primary" placeholder="Edit calendar name..." value={currentCalTitle} />*/}
 
-        <input className="pt-input" type="text" width="300px" placeholder="Enter a name for your calendar" value={saveFileName}/> 
+        <input className="pt-input" type="text" width="300px" placeholder="Enter a name for your calendar" onChange={handleTitleChange} value={saveFileName}/> 
         &nbsp;
-        <button className={"pt-button pt-intent-primary pt-icon-document " + saveStatus}>Save</button>
+        <button
+          className={"pt-button pt-intent-primary pt-icon-document " + saveStatus}
+          onClick={saveHandler.bind(this)}
+          >
+            Save
+        </button>
       </div>
     )
 
@@ -707,6 +841,7 @@ class TagList extends Component {
     // TODO investigate how one is to do this. What's the reac-way? Passing down a big component that holds all methods?
     var clicky = this.props.clicky;
     var selected = this.props.selected;
+    console.log('selected tags', selected);
     return (
       <div className={"tag-list"}>
         <h4>Tags</h4>
@@ -834,14 +969,15 @@ export default App;
  * TODO: add a reset state button -- Done
  * TODO: add a list of saved states (searches) -- Done
  * 
- * TODO: save saved states to localstorage (do writes)
- * TODO: hookup load menu to loading state (do read on command)
- * TODO: save partial state (selected_tags and local should do it - basically everything that reset resets)
- * TODO: add save dialogue or other UI element (title)
- * TODO: launch toast on save confirm - or other UI element (maybe save button turns green?)
- * TODO: actually show stuff on the calendar
- * TODO: add a spinner if necessary
+ * TODO: save saved states to localstorage (do writes) -- DONE
+ * TODO: hookup load menu to loading state (do read on command) -- DONE
+ * TODO: save partial state (selected_tags and local should do it - basically everything that reset resets) -- DONE!
+ * TODO: add save dialogue or other UI element (title) -- DONE
+ * TODO: launch toast on save confirm - or other UI element (maybe save button turns green?) -- DONE
+ * TODO: actually show stuff on the calendar !!!! (HIGH PRIORITY!)
+ * TODO: add a spinner if necessary (TBD)
  * TODO: Drupalify the whole thing (build and add to a module)
- * TODO: improve help text (also hide dialogue on not-first time)
- * TODO: make the help text a variable that can be put in dialogue and also a help menu item -- Done
+ * TODO: improve help text (also hide dialogue on not-first time) -- DONE
+ * TODO: make the help text a variable that can be put in dialogue and also a help menu item -- DONE
+ * TODO: probably dont need shortid anymore, maybe get rid of it.
  */
