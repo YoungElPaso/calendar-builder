@@ -7,9 +7,14 @@ import {
     Intent,
     Position,
     Popover,
+    Menu,
+    MenuItem,
+    Navbar,
     PopoverInteractionKind
 } from "@blueprintjs/core";
 
+// Import the DB implmenetation that uses lokijs.
+import Database from './saving.js';
 // Need fullcalendar.
 import 'fullcalendar';
 // Think we need jQuery.
@@ -49,6 +54,11 @@ class App extends Component {
     // TODO: state should be empty and loaded from localstorage, if we want something fancy.  
     if (!this.state) {
       this.state = {
+        persist: false,
+        saves: [
+          {id:3, title:'fake saved item'},
+          {id:4, title:'another fake item'}
+        ],
         tags: [],
         query: '',
         selected_tags: {},
@@ -61,13 +71,13 @@ class App extends Component {
     this.handleTagClick = this.handleTagClick.bind(this);
     this.onlyLocal = this.onlyLocal.bind(this);
     this.onlyTopTen = this.onlyTopTen.bind(this);
+    this.reset  = this.reset.bind(this);
   }
 
   // Create a toaster for 'toast messages'.
   createToaster(){
     var toastHolder = document.getElementsByClassName('toasties')[0];
-    console.log('toastHolder', toastHolder);
-    // Toast?
+    // Instantiate Toaster.
     this.toast = Toaster.create({
       className: "my-toaster",
       position: Position.TOP,
@@ -76,9 +86,14 @@ class App extends Component {
     }, toastHolder);
   }
 
-  // Blows away all tag states.
+  // Blows away all filter states.
   reset(){
-    this.setState({selected_tags:{}});
+    if (!_.isEmpty(this.state.selected_tags) || this.state.onlyLocalEnabled) {
+    this.setState({selected_tags: {}, onlyLocalEnabled: false}, function(){
+      // console.log(this.state);
+      this.filterData(data, this.updateCal);
+    });
+    } 
   }
 
   // Toggles the onlyLocal filtering.
@@ -149,9 +164,9 @@ class App extends Component {
 
       this.setState({onlyTopTenEnabled: true}, function(){
         // Changes whole query and resets UI. Daunting!
-        console.log('changing top-ten to true');
-        console.log(this.state.onlyTopTenEnabled);
-        console.log('gettin moar/diff data!');
+        // console.log('changing top-ten to true');
+        // console.log(this.state.onlyTopTenEnabled);
+        // console.log('gettin moar/diff data!');
         // Think I need to blow away all the other states... Need a reset?
         // this.reset();
         // this.getAllTags(tendata);
@@ -257,7 +272,7 @@ class App extends Component {
         // Maybe flag that there are hidden tags in state? That would work but seems like cheating...But then again, some of these conditions should be an extra, optional layer. Annoying all the same.
         
         if (tag.visible == false && tag.enabled == 'enabled') {
-          console.log('hidden tags!');
+          // console.log('hidden tags!');
           // that.setState({hasHiddenTags: true});
         }
 
@@ -269,7 +284,7 @@ class App extends Component {
 
     // Do a simple check to see if all the filters are disabled, inform user they are.
     var allDisabled = _.every(that.state.tags, function(tag, whichTag) {
-      console.log('enabled?', tag.enabled);
+      // console.log('enabled?', tag.enabled);
       return tag.enabled == 'disabled';
     });
     if (allDisabled) {
@@ -416,11 +431,34 @@ class App extends Component {
         console.log('updating state from server');
     });
   }
+
+  // Lists the saved states (search configurations) to be loaded.
+  listSaves(saves) {
+    console.log('updating state with list of saves');
+    this.setState({
+      saves: saves
+    },
+      function(){
+        
+      }
+    )
+  }
   componentDidMount() {
     // Get all of the tags for the UI.
     // Run update on all tags right away?
     this.getAllTags(data);
-    
+
+    if(this.state.persist){
+      // Instantiate a Database object (contains LokiJS DB and methods for writing/saving - used for persisting state).
+      var dBObject = new Database();
+      dBObject.create();
+      var saves = dBObject.doLoad().results;
+      // console.log('loaded db object', dBObject);
+      // console.log('saves', saves);
+      // Need to update state w/ list of saved states.
+      this.listSaves(saves);
+    }
+
     // Init the bloody toaster.
     this.createToaster();
   }
@@ -432,9 +470,11 @@ class App extends Component {
           <h2>Welcome to Calendar Builder 1.0</h2>
         </div>
         
-        <p className="App-intro">
+        {/*<p className="App-intro">
           Build a calendar by selecting available tags.  NB: tags that have no events associated with them in this set of events are disabled. Selecting tags narrows the set.
-        </p>
+        </p>*/}
+
+        <SavedList saves={this.state.saves} clicky={this.reset} />
 
         <div className="toasties"></div>
 
@@ -476,6 +516,57 @@ class App extends Component {
           <Calendar id="search-calendar"/>
         </Popover>
       </div>
+    );
+  }
+}
+
+/**
+ * Holds list of saved states.
+ */
+class SavedList extends Component {
+  constructor(props) {
+    super(props);
+    this.props = props;
+  }
+  render () {
+    var clicky = this.props.clicky;
+    var menuContent = (
+      <div className="saved-list">
+          <Menu>
+              {
+                this.props.saves.map((save) =>
+                  <MenuItem
+                    key={save.id}
+                    text={save.title} 
+                  />
+                )
+              }
+          </Menu>
+      </div>
+    );
+    return (
+      <nav className="pt-navbar io-menu">
+        <div className='pt-navbar-group pt-align-left'>
+          <button className="pt-button pt-intent-primary">Save calendar</button>
+          &nbsp;
+          <Popover content={menuContent}
+            interactionKind={PopoverInteractionKind.CLICK}
+            popoverClassName="pt-popover-content-sizing"
+            position={Position.BOTTOM}
+            useSmartPositioning={false}>
+            <button className="pt-button pt-intent-primary">Load calendar</button>
+          </Popover>
+          &nbsp;
+          &nbsp;
+        </div>
+        <div className='pt-navbar-group pt-align-right'>
+          <button
+            onClick={clicky.bind(this)}
+            className="pt-button pt-intent-primary onClick">
+            Reset filters
+          </button>
+        </div>
+      </nav>
     );
   }
 }
