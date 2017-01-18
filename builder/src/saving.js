@@ -38,6 +38,15 @@ class Database {
         this.setDb(db);
     }
 
+    checkCollections(db, col) {
+        var colBool = false;
+        db.loadDatabase(null,
+            function(){
+                colBool = db.getCollection(col) !== null;
+        });
+        return colBool;
+    }
+
     // holder = {};
 
     // static setResults(res) {
@@ -70,7 +79,26 @@ class Database {
         // Wrap in anon function so can pass appropriate callback.
         db.loadDatabase(null,
         function(){
-            resultsFunction(db, self);
+            // See if we have saves...
+            var saves = db.getCollection('saves');
+            if (saves) {
+                console.log('DB has a collection already.');
+                // So go get em.
+                resultsFunction(db, self);
+            }
+            else {
+                console.log('No collection yet! creating.');
+                db.addCollection('saves', 
+                    {
+                    clone: false,
+                    unique: 'id',
+                    indices:['id', 'state']
+                    }
+                );
+                db.saveDatabase();
+                console.log('collection should be added.', db);
+
+            }
         });
         return self;
     }
@@ -83,6 +111,7 @@ class Database {
         // Get a list of saves.
         console.log('getting results for ', db);
         var saves = db.getCollection('saves');
+        // Load all the saves that have a state (should be all).
         self.results = saves.where(function(obj){
             return obj.state !== null;
         })
