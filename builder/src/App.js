@@ -22,6 +22,9 @@ import Database from './saving.js';
 import 'fullcalendar';
 // Think we need jQuery.
 import jQuery from 'jquery';
+// Need moment to work w/ fullCalendar.
+import moment from 'moment';
+
 // Need lodash utilities for arrays and JSON filtering.
 import _ from 'lodash';
 // Need shortid to create some nice short ids.
@@ -388,7 +391,8 @@ class App extends Component {
       // TODO update status of remaining tags (i.e. disable if they're dead ends.)
     this.updateTags(filterDocs);
     // TODO fix up this callback design.  Kinda weird. This cb should update calendar.
-    cb(filterDocs);
+    // cb(filterDocs);
+    this.updateCal(filterDocs);
     // var that = this;
     // _.each(this.state.selected_tags, function(val){
     //   console.log(that.state.selected_tags[val].title);
@@ -396,9 +400,22 @@ class App extends Component {
     
   }
 
+  static calObj = {id:'foobar'}
+
   // Now update the calendar.
   updateCal(docs) {
-    console.log('filtered docs', docs);
+    console.log('whats this', this);
+    console.log('filtered docs', docs, this.calObj);
+    var cal = this.calObj;
+    _.each(docs, function(doc){
+      var start = doc['ds_field_channels_event_date:value'];
+      var momStart = moment(start);
+      console.log('start', momStart);
+      cal.renderEvent({
+        title: doc['tm_title'][0],
+        start: momStart
+      })
+    });
   }
 
   handleTagClick(tag) {
@@ -724,7 +741,7 @@ class App extends Component {
           popoverClassName="pt-popover-content-sizing"
           position={Position.TOP_LEFT}
           useSmartPositioning={false}>
-          <Calendar id="search-calendar"/>
+          <Calendar id="search-calendar" parent={this}/>
         </Popover>
       </div>
     );
@@ -894,8 +911,19 @@ class Tag extends Component {
 // TODO: merge this with taglist (should be one big Component).
 class Calendar extends Component {
   componentDidMount() {
+    // TODO: look into this, this seems weird. this parent stuff.
+    var parent = this.props.parent;
+
     // Use the fullCalendar plugin.
-    jQuery('#'+this.props.id).fullCalendar();
+    var cal = jQuery('#'+this.props.id).fullCalendar();
+    parent.calObj = jQuery('#'+this.props.id).fullCalendar('getCalendar');
+    console.log('calendar object?', parent);
+    var sampleEvent = {
+      title: 'My fun event!',
+      start: moment()
+    }
+
+    parent.calObj.renderEvent( sampleEvent );
   }
   render() {
     return (
