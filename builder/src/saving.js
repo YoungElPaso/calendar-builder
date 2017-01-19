@@ -127,6 +127,19 @@ class Database {
         });
         return self;
     }
+
+    getAResult(db, self, doc) {
+        console.log('getting single result');
+        var res = [];
+        db.loadDatabase();
+            // function(){
+        // });
+        var saves = db.getCollection('saves');
+        res = saves.where(function(obj){
+            return obj.titleHash == doc.titleHash;
+        });
+        return res[0];
+    }
     
     // Looks at results in the loaded DB.
     getResults(db, self) {
