@@ -9,6 +9,7 @@ import {
     Popover,
     Menu,
     MenuItem,
+    MenuDivider,
     Navbar,
     EditableText,
     Dialog,
@@ -131,13 +132,21 @@ class App extends Component {
   }
 
   // Blows away all filter states.
-  reset(){
-    if (!_.isEmpty(this.state.selected_tags) || this.state.onlyLocalEnabled) {
+  reset(callback){
+    var callback = callback;
+    console.log('callback?', typeof(callback));
+    if (!_.isEmpty(this.state.selected_tags) || this.state.onlyLocalEnabled || typeof(callback) == 'function') {
     // Again, blow away a save if actually resetting
     this.saveDirty(false);
     this.setState({selected_tags: {}, onlyLocalEnabled: false}, function(){
-      // console.log(this.state);
-      this.filterData(data, this.updateCal);
+      console.log('reset state', this.state);
+      if(typeof(callback) == 'function') {
+        console.log('dong reset callback');
+        callback();
+      } else {
+        // Default action on reset?
+        this.filterData(data);
+      }
     });
     } 
   }
@@ -159,7 +168,7 @@ class App extends Component {
           // Better approach would be same as handling tag click...
           // Now filter the data.
           // console.log(this.state.selected_tags);
-          this.filterData(data, this.updateCal);
+          this.filterData(data);
 
           // Might wanna consider overriding hide/show tags if some are hidden.
           // But in practise this is super confusing and doesn't resplect the users choice.  A better option would be a notice...'
@@ -178,7 +187,7 @@ class App extends Component {
           // This is kinda crappy.  Too high-level, just blasts away everything...
           // Need a lower level tag and doc filtering not smash it all.
           // this.getAllTags(data);
-          this.filterData(data, this.updateCal);
+          this.filterData(data);
         });
       }
     }
@@ -266,7 +275,6 @@ class App extends Component {
       tag.count = 0;
       _.each(docs, function(doc) {
         // TODO make this not hardcoded....and better var name
-        // var extry = doc['ss_field_source_site:url'] !== 'https://testbed13.ccs.mcgill.ca/wms';
         var extry = false;
         if (that.state.onlyLocalEnabled) {
             extry = doc['ss_field_source_site:url'] !== that.state.onlyLocalVal;
@@ -392,7 +400,9 @@ class App extends Component {
     this.updateTags(filterDocs);
     // TODO fix up this callback design.  Kinda weird. This cb should update calendar.
     // cb(filterDocs);
+    
     this.updateCal(filterDocs);
+    
     // var that = this;
     // _.each(this.state.selected_tags, function(val){
     //   console.log(that.state.selected_tags[val].title);
@@ -404,18 +414,71 @@ class App extends Component {
 
   // Now update the calendar.
   updateCal(docs) {
-    console.log('whats this', this);
-    console.log('filtered docs', docs, this.calObj);
+  console.log('udapting calendar');
+
+// Hide other toasts, show one about loading events.
+    if (docs.length > 0) {
+      this.toast.clear();
+      this.toast.show({
+                message: (
+                  <div>
+                    <span className="pt-ui-text-large">{'Loading ' + docs.length + ' events'}</span>
+                    <ProgressBar
+                      className="block"
+                      intent={Intent.PRIMARY}
+                      value={1}
+                    />
+                  </div>
+                ),
+                timeout: 1500,
+                onDismiss: function() {
+                  // console.log(t);
+                  // t.filterData(data);
+                }
+                // intent: Intent.PRIMARY
+              });
+    }
+
+    // If there are current toasts, wait till there gone? Or update.
+    // var existingToasts = this.toast.getToasts(); 
+    // if(existingToasts.length > 0) {
+    //   console.log('haz toasts', existingToasts[0].key);
+    //   this.toast.update(existingToasts[0].key, {
+    //     timeout: 1000,
+    //     message: 'new message!'
+    //   });
+    // };
+
+    // this.toast.show({
+    //     message: 'Loaded ' + docs.length + ' events',
+    //     intent: Intent.PRIMARY,
+    //     timeout: 2000 // TODO: make this timeout related to the other loading one and have the progressbar actually update!
+    //   });
+    
+
+    // console.log('whats this', this);
+    // console.log('filtered docs', docs, this.calObj);
     var cal = this.calObj;
+    // Remove all events that were there before.
+    cal.removeEvents();    
+    // Init an empty array to hold our events.
+    var eventCollection = [];
+    // Loop through all events and put them on the calendar.
     _.each(docs, function(doc){
+      // Get start and end dates, convert them to UTC w/ moment.
       var start = doc['ds_field_channels_event_date:value'];
-      var momStart = moment(start);
-      console.log('start', momStart);
-      cal.renderEvent({
+      var end = doc['ds_field_channels_event_date:value2'];
+      var momStart = moment.utc(start);
+      var momEnd = moment.utc(end);
+      var newEvent = {
         title: doc['tm_title'][0],
-        start: momStart
-      })
+        start: momStart,
+        end: momEnd
+      }
+      eventCollection.push(newEvent);
     });
+    // This is much better than calling renderEvent on each event in loop.
+    cal.addEventSource(eventCollection);
   }
 
   handleTagClick(tag) {
@@ -441,7 +504,7 @@ class App extends Component {
       this.setState({selected_tags: selected}, function(){
         // Now filter the data.
         // console.log(this.state.selected_tags);
-        this.filterData(data, this.updateCal);
+        this.filterData(data);
       });
     
     }
@@ -519,38 +582,34 @@ class App extends Component {
   static dBObject = {}
 
   doFileLoad(save) {
+    // Need to actually load the save from storage, dont rely on menu.
+    var t = this;
+    // Call reset and once that's done, set new state.
+    this.reset(function(){
     console.log('loading save', save);
+    // Theres a bug somewhere were save here gets updated (probably cause it derives some props from state, which gets updated and so updates save) TRICKY! So we need to actually reload the DB version of the save.
+    var dbSave = t.dBObject.getAResult(t.dBObject.holder, t.dBObject, save);
+    // console.log('loading save vs db save', dbSave);
+    var loaded = dbSave;
+
     // Get state out of the loaded save.
-    var st = save.state;
+    var st = loaded.state;
     var selected_tags = st.selected_tags;
+    // console.log('loading selected tags', selected_tags);
     var onlyLocalEnabled = st.onlyLocalEnabled;
-    // Call reset.
-    this.reset();
-    // Set these elements of the state to be that of the save.
-    // & Set the saveFileName to be that of the save
-    this.setState(
-      {
-        selected_tags: selected_tags,
-        onlyLocalEnabled: onlyLocalEnabled,
-        saveFileName: save.title,
-        saveStatus: 'pt-icon-saved pt-intent-success'
-      }, function(){
-      this.toast.show({
-            message: (
-              <div>
-                <span className="pt-ui-text-large">{'Loading ' + save.title}</span>
-                <ProgressBar
-                  className="block"
-                  intent={Intent.PRIMARY}
-                  value={1}
-                />
-              </div>
-            ),
-            timeout: 1000,
-            // intent: Intent.PRIMARY
-          });
-      // Run with our new state.
-      this.filterData(data, this.updateCal);
+      // Set these elements of the state to be that of the save.
+      // & Set the saveFileName to be that of the save
+      t.setState(
+        {
+          selected_tags: selected_tags,
+          onlyLocalEnabled: onlyLocalEnabled,
+          saveFileName: save.title,
+          saveStatus: 'pt-icon-saved pt-intent-success'
+        }, function(){
+          // console.log('showing a toast for loading.');
+          // Run with our new state.
+          t.filterData(data);
+      });
     });
   }
 
@@ -581,7 +640,7 @@ class App extends Component {
       t.dBObject.holder.saveDatabase();
       t.dBObject.getResults(t.dBObject.holder, t.dBObject);
       t.listSaves(t.dBObject.results);
-      console.log('new saving...');
+      console.log('new saving... and updating list of saves', t.dBObject.results);
       // And update the UI.
       t.toast.show({
           message: (<span className='pt-ui-text-large'>{testDoc.title} saved</span>),
@@ -676,7 +735,7 @@ class App extends Component {
           iconName="calendar"
           isOpen={this.state.showingHelp}
           onClose={this.showHelp}
-          title="Getting Started"
+          title="Getting Started with CalendarBuilder"
         >
           <div className="pt-dialog-body">
             <h5>Basics</h5>
@@ -770,8 +829,12 @@ class SavedList extends Component {
 
     var loadPlaceHolder = "";
     if (saves.length < 1) {
-    loadPlaceHolder = (
-        <MenuItem text="No calendars to load yet!" />
+      loadPlaceHolder = (
+        <MenuDivider title="No calendars to load yet!" />
+      )
+    } else {
+      loadPlaceHolder = (
+        <MenuDivider title="Select a calendar to load" />
       )
     }
     var menuContent = (
@@ -781,6 +844,7 @@ class SavedList extends Component {
               {
                 saves.map((save) =>
                   <MenuItem
+                    iconName="calendar"
                     key={save.id}
                     text={save.title}
                     onClick={doFileLoad.bind(this, save)}
@@ -821,8 +885,9 @@ class SavedList extends Component {
         <div className='pt-navbar-group pt-align-left'>
             <img src={calendarIcon} className="" alt="logo"  height="50px" />
           <div className="pt-navbar-heading">
-            Calendar Builder v1.0
+            CalendarBuilder v1.0
           </div>
+          <span className="pt-navbar-divider"></span>
           {/*<Popover content={saveDialogue}
             interactionKind={PopoverInteractionKind.CLICK}
             popoverClassName="pt-popover-content-sizing"
@@ -873,7 +938,7 @@ class TagList extends Component {
     // TODO investigate how one is to do this. What's the reac-way? Passing down a big component that holds all methods?
     var clicky = this.props.clicky;
     var selected = this.props.selected;
-    console.log('selected tags', selected);
+    // console.log('selected tags', selected);
     return (
       <div className={"tag-list"}>
         <h4>Tags</h4>
@@ -917,13 +982,13 @@ class Calendar extends Component {
     // Use the fullCalendar plugin.
     var cal = jQuery('#'+this.props.id).fullCalendar();
     parent.calObj = jQuery('#'+this.props.id).fullCalendar('getCalendar');
-    console.log('calendar object?', parent);
-    var sampleEvent = {
-      title: 'My fun event!',
-      start: moment()
-    }
+    // console.log('calendar object?', parent);
+    // var sampleEvent = {
+    //   title: 'My fun event!',
+    //   start: moment()
+    // }
 
-    parent.calObj.renderEvent( sampleEvent );
+    // parent.calObj.renderEvent( sampleEvent );
   }
   render() {
     return (
@@ -996,12 +1061,12 @@ export default App;
  * - Only local should be a lower lvl toggle like facets, top 10 facets should be higher level?
  * - Hrm, these top 15 and only local complicate matters - they are ANDS right? and are they on same level as any other filter? Not the top 15 I guess...only local should be/could be a tag (facet) like any other I'm sure?
  * - Need to rethink the top 15. Its probably best as a visual aid - i.e. don't show a giant list of tags more so than an explicit filtering tool, i.e. it shouldn't reset your search just cause you clicked on it. Or should it? Yeah pretty sure it should just be a way to collapse all but top 15 - i.e. set them to some hidden status (NOT selection, just hidden)
- * - TODO: need to make sure state is transferable - i.e. its saved and can be loaded anew (i.e. the tool can load a state)
- * TODO: find out about UI elements (like switches etc, use Blueprint npm maby?)
- * TODO: save the state! Load the state!
- * TODO: add some feedback if down to 0 tags/results (maybe a blueprint toast?)
- * TODO: add a toast feedback for total num of filtered docs.
- * TODO: fix up blueprint css - it overrides a bunch of stuff in ways I dont like.
+ * - TODO: need to make sure state is transferable - i.e. its saved and can be loaded anew (i.e. the tool can load a state) -- DONE
+ * TODO: find out about UI elements (like switches etc, use Blueprint npm maby?) -- DONE
+ * TODO: save the state! Load the state! -- DONE
+ * TODO: add some feedback if down to 0 tags/results (maybe a blueprint toast?) - DONE
+ * TODO: add a toast feedback for total num of filtered docs. -- DONE
+ * TODO: fix up blueprint css - it overrides a bunch of stuff in ways I dont like. -- DONE but reverted
  * TODO: fix up allsources toggle - it toggles by itself. - Done 
  * Also shuld dismiss toast. Also shorten toast length. - DONE 
  * Also disable show less tag hindrance (due to hidden tags) - Done 
@@ -1023,4 +1088,5 @@ export default App;
  * TODO: improve help text (also hide dialogue on not-first time) -- DONE
  * TODO: make the help text a variable that can be put in dialogue and also a help menu item -- DONE
  * TODO: probably dont need shortid anymore, maybe get rid of it.
+ * TODO: make a decision about whether reset shows all calendar items, i.e. if theres no filters selected, do we want to display all, and if so, why not on first load too?
  */
