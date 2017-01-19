@@ -87,7 +87,7 @@
 
 /* Calendar Styles. */
 .calendar-element {
-  background: #AAA;
+  /*background: #eee;*/
   margin: 1em;
   padding: 0.25em;
 }
@@ -114,4 +114,8 @@ button.pt-button.pt-icon-cross::before {
   margin: 0 auto;
   margin-top: 1em;
   width: 98%;
+}
+
+.block .pt-progress-meter {
+  display:block !important;
 }

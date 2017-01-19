@@ -12,6 +12,7 @@ import {
     Navbar,
     EditableText,
     Dialog,
+    ProgressBar,
     PopoverInteractionKind
 } from "@blueprintjs/core";
 
@@ -197,11 +198,11 @@ class App extends Component {
       var selected = this.state.selected_tags;
       var ceiling = this.state.hideTagsAfter;
       cantHide = _.some(selected, function(tag){
-        // TODO: return some message about id being disbaled!
+        //TODO: the logic above is faulty, message appears too often.
         that.toast.show({
           message: 'Just an FYI, you might be hiding some of your selected tags!',
           timeout: 4000,
-          intent: Intent.PRIMARY
+          // intent: Intent.PRIMARY
         })
         return tag.num > ceiling;
       });
@@ -514,8 +515,23 @@ class App extends Component {
       {
         selected_tags: selected_tags,
         onlyLocalEnabled: onlyLocalEnabled,
-        saveFileName: save.title
+        saveFileName: save.title,
+        saveStatus: 'pt-icon-saved pt-intent-success'
       }, function(){
+      this.toast.show({
+            message: (
+              <div>
+                <span className="pt-ui-text-large">{'Loading ' + save.title}</span>
+                <ProgressBar
+                  className="block"
+                  intent={Intent.PRIMARY}
+                  value={1}
+                />
+              </div>
+            ),
+            timeout: 1000,
+            // intent: Intent.PRIMARY
+          });
       // Run with our new state.
       this.filterData(data, this.updateCal);
     });
@@ -551,9 +567,9 @@ class App extends Component {
       console.log('new saving...');
       // And update the UI.
       t.toast.show({
-          message: 'Saved!',
+          message: (<span className='pt-ui-text-large'>{testDoc.title} saved</span>),
           timeout: 1000,
-          intent: Intent.SUCCESS
+          // intent: Intent.SUCCESS
         });
       t.setState({saveStatus: 'pt-icon-saved pt-intent-success'}, function(){
       });
@@ -565,9 +581,10 @@ class App extends Component {
         console.log(t.dBObject.results);
       // Update the UI.
         t.toast.show({
-            message: 'Updated!',
+            // className: 'pt-dark',
+            message: (<span className='pt-ui-text-large'>{testDoc.title} updated</span>),
             timeout: 1000,
-            intent: Intent.SUCCESS
+            // intent: Intent.SUCCESS
           });
       t.setState({saveStatus: 'pt-icon-saved pt-intent-success'}, function(){
       });
