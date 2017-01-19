@@ -957,4 +957,5 @@ export default App;
  * TODO: make the help text a variable that can be put in dialogue and also a help menu item -- DONE
  * TODO: probably dont need shortid anymore, maybe get rid of it.
  * TODO: make a decision about whether reset shows all calendar items, i.e. if theres no filters selected, do we want to display all, and if so, why not on first load too?
+ * TODO: need to add hover or click to fullcalendar events (pop-up behaviour)
  */
