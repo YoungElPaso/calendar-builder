@@ -98,7 +98,6 @@ class App extends Component {
   handleTitleChange(event){
     this.saveDirty(false);
     this.setState({saveFileName: event.target.value}, function(){
-      console.log('newname', this.state.saveFileName);
     });
   }
 
@@ -110,11 +109,9 @@ class App extends Component {
   showHelp(){
     if(!this.state.showingHelp) {
       this.setState({showingHelp: true}, function(){
-      console.log('toggle true', this.state);
       });
     } else {
       this.setState({showingHelp: false}, function(){
-      console.log('toggle false');
       });
     }
   }
@@ -134,14 +131,11 @@ class App extends Component {
   // Blows away all filter states.
   reset(callback){
     var callback = callback;
-    console.log('callback?', typeof(callback));
     if (!_.isEmpty(this.state.selected_tags) || this.state.onlyLocalEnabled || typeof(callback) == 'function') {
     // Again, blow away a save if actually resetting
     this.saveDirty(false);
     this.setState({selected_tags: {}, onlyLocalEnabled: false}, function(){
-      console.log('reset state', this.state);
       if(typeof(callback) == 'function') {
-        console.log('dong reset callback');
         callback();
       } else {
         // Default action on reset?
@@ -167,7 +161,6 @@ class App extends Component {
           
           // Better approach would be same as handling tag click...
           // Now filter the data.
-          // console.log(this.state.selected_tags);
           this.filterData(data);
 
           // Might wanna consider overriding hide/show tags if some are hidden.
@@ -220,17 +213,6 @@ class App extends Component {
       });
 
       this.setState({onlyTopTenEnabled: true}, function(){
-        // Changes whole query and resets UI. Daunting!
-        // console.log('changing top-ten to true');
-        // console.log(this.state.onlyTopTenEnabled);
-        // console.log('gettin moar/diff data!');
-        // Think I need to blow away all the other states... Need a reset?
-        // this.reset();
-        // this.getAllTags(tendata);
-
-        // Dont really need tendata - its just a big data haul to update just the tags, handle it all front-end instead.
-        // this.getAllTags(data);
-
         // Now just a glorified show/hide...
         _.each(that.state.tags, function(tag, whichTag) {
           if (whichTag < that.state.hideTagsAfter) {
@@ -238,7 +220,6 @@ class App extends Component {
           } else {
             tag.visible = false;
           }
-          // console.log(whichTag);
           var tagUpdtd = that.state.tags[whichTag];
           that.setState({tagUpdtd: tag});
         });
@@ -247,11 +228,6 @@ class App extends Component {
     } else {
       var that = this;
       this.setState({onlyTopTenEnabled: false}, function(){
-        // console.log(this.state.onlyTopTenEnabled);
-        // Resets to original query.
-        // this.reset();
-        // this.getAllTags(data);
-
         // Now just a glorified show/hide...
         _.each(that.state.tags, function(tag, whichTag) {
           tag.visible = true;
@@ -262,13 +238,11 @@ class App extends Component {
 
       });
     }
-    // TODO: need the actual callback after setState to do filtering and update tags.
   }
 
   // Updates the state of the tags based on filter actions.
   updateTags(docs) {
     // For filter check if its in any of docs (ideally docs are narrowed at this point) if it is, its still enabled, if it isn't disable it.'
-    console.log('updating tags');
     var that = this;
     _.each(that.state.tags, function(tag, whichTag) {
       var deadEnd = [];
@@ -282,7 +256,6 @@ class App extends Component {
 
         if(_.indexOf(doc['sm_field_tags:name'], tag.title) < 0 || extry) {
           deadEnd.push(false);
-          // console.log('count', tag.count);
         } else {
           // Fix this operator up.
           tag.count = tag.count + 1;
@@ -291,15 +264,10 @@ class App extends Component {
       });
       // TODO clean up these conditionals, kinda ugly.
       if (_.indexOf(deadEnd, true) < 0 ) {
-        // console.log('real deadend!', tag.title);
         tag.enabled = 'disabled';
         var tagUpdtd = that.state.tags[whichTag];
         that.setState({tagUpdtd: tag});
       } 
-      // else if (that.state.onlyTopTenEnabled && whichTag >= that.state.hideTagsAfter) {
-      //   // Need to double check if we have topten type filter going on.
-      //   // tag.enabled = 'disabled';
-      // }
       else {
         // Handle case of hidden but useful tag. TODO: this needs to be done probably out of the loop and better. I.e. show all tags and explicitly trigger override. Blah...this is bad...
 
@@ -336,11 +304,9 @@ class App extends Component {
         that.setState({tagUpdtd: tag});
       }
     });
-    // console.log(that.state.tags);
 
     // Do a simple check to see if all the filters are disabled, inform user they are.
     var allDisabled = _.every(that.state.tags, function(tag, whichTag) {
-      // console.log('enabled?', tag.enabled);
       return tag.enabled == 'disabled';
     });
     if (allDisabled) {
@@ -353,8 +319,7 @@ class App extends Component {
   }
 
   filterData(data, cb) {
-    // console.log('Re-filtering data for the calendar based on...');
-    // console.log(this.state.selected_tags);
+    // 'Re-filtering data for the calendar.
     var filterDocs = data.response.docs;
     var filters = this.state.selected_tags;
     var doLocalFilter = this.state.onlyLocalEnabled;
@@ -367,7 +332,6 @@ class App extends Component {
         var includeChecks = [];
         // Check each filter against the doc.
         _.each(filters, function(filter){
-          // console.log(_.indexOf(obj['sm_field_tags:name'], filter.title) >= 0, obj.id);
           // array that if includes one false, excludes the doc (AND operator)
           includeChecks.push(_.indexOf(obj['sm_field_tags:name'], filter.title) >= 0);
         });
@@ -382,11 +346,10 @@ class App extends Component {
         //
 
         // TODO fix up this hard to follow boolean logic.  Make it more legible.
-        // console.log(obj.id, includeChecks, _.indexOf(includeChecks, false) >= 0);
         return _.indexOf(includeChecks, false) < 0;
         // return true;
       });
-      // console.log('filtered docs', filterDocs);
+
     } else {
       // console.log('non-filtered docs', filterDocs);
     }
@@ -403,61 +366,30 @@ class App extends Component {
     
     this.updateCal(filterDocs);
     
-    // var that = this;
-    // _.each(this.state.selected_tags, function(val){
-    //   console.log(that.state.selected_tags[val].title);
-    // })
-    
   }
 
   static calObj = {id:'foobar'}
 
   // Now update the calendar.
   updateCal(docs) {
-  console.log('udapting calendar');
-
-// Hide other toasts, show one about loading events.
     if (docs.length > 0) {
+      // Hide other toasts, show one about loading events.
       this.toast.clear();
       this.toast.show({
-                message: (
-                  <div>
-                    <span className="pt-ui-text-large">{'Loading ' + docs.length + ' events'}</span>
-                    <ProgressBar
-                      className="block"
-                      intent={Intent.PRIMARY}
-                      value={1}
-                    />
-                  </div>
-                ),
-                timeout: 1500,
-                onDismiss: function() {
-                  // console.log(t);
-                  // t.filterData(data);
-                }
-                // intent: Intent.PRIMARY
-              });
+        message: (
+          <div>
+            <span className="pt-ui-text-large">{'Loading ' + docs.length + ' events'}</span>
+            <ProgressBar
+              className="block"
+              intent={Intent.PRIMARY}
+              value={1}
+            />
+          </div>
+        ),
+        timeout: 1500
+      });
     }
 
-    // If there are current toasts, wait till there gone? Or update.
-    // var existingToasts = this.toast.getToasts(); 
-    // if(existingToasts.length > 0) {
-    //   console.log('haz toasts', existingToasts[0].key);
-    //   this.toast.update(existingToasts[0].key, {
-    //     timeout: 1000,
-    //     message: 'new message!'
-    //   });
-    // };
-
-    // this.toast.show({
-    //     message: 'Loaded ' + docs.length + ' events',
-    //     intent: Intent.PRIMARY,
-    //     timeout: 2000 // TODO: make this timeout related to the other loading one and have the progressbar actually update!
-    //   });
-    
-
-    // console.log('whats this', this);
-    // console.log('filtered docs', docs, this.calObj);
     var cal = this.calObj;
     // Remove all events that were there before.
     cal.removeEvents();    
@@ -490,20 +422,16 @@ class App extends Component {
 
     if (tag.enabled !== 'disabled') {
       // Update the tag display and the state to hold which tags are selected.
-      // console.log('tag clicked', tag);
       var selected = this.state.selected_tags;
       // If the tag isn't already selected.
       if (_.has(selected, tag.id) === false) {
         selected[tag.id] = tag;
-        // console.log('adding tag', selected);
       } else {
         _.unset(selected, [tag.id]);
-        // console.log('removed', selected);
       }
         
       this.setState({selected_tags: selected}, function(){
         // Now filter the data.
-        // console.log(this.state.selected_tags);
         this.filterData(data);
       });
     
@@ -517,9 +445,6 @@ class App extends Component {
   }
 
   getAllTags(data) {
-    // TODO: need to filter out all the tags that have a 0 count, so probably need to bring back the counts....
-    // console.log('mounted');
-    // console.log(this.state);
     // This is fixture stuff, should be wrapped in AJAX call.
     var raw = data.facet_counts.facet_fields['sm_field_tags:name'];
     // console.log(data);
@@ -539,7 +464,6 @@ class App extends Component {
       if (typeof(entry) === 'string') {
         // Argh! my beautiful simple code is turning into spaghetti!
         var isVis = isVisVal? isVisVal > key / 2 : true;
-        // console.log(key / 2, isVis);
         newTags.push({
           num: key/2,
           // id: shortid.generate(), this is probably bad, cause its diff everytime we run the function!
@@ -563,18 +487,15 @@ class App extends Component {
       },
       function(){
         this.updateTags(data.response.docs);
-        console.log('updating state from server');
     });
   }
 
   // Lists the saved states (search configurations) to be loaded.
   listSaves(saves) {
-    console.log('updating state with list of saves');
     this.setState({
       saves: saves
     },
       function(){
-        
       }
     )
   }
@@ -586,16 +507,12 @@ class App extends Component {
     var t = this;
     // Call reset and once that's done, set new state.
     this.reset(function(){
-    console.log('loading save', save);
     // Theres a bug somewhere were save here gets updated (probably cause it derives some props from state, which gets updated and so updates save) TRICKY! So we need to actually reload the DB version of the save.
     var dbSave = t.dBObject.getAResult(t.dBObject.holder, t.dBObject, save);
-    // console.log('loading save vs db save', dbSave);
     var loaded = dbSave;
-
     // Get state out of the loaded save.
     var st = loaded.state;
     var selected_tags = st.selected_tags;
-    // console.log('loading selected tags', selected_tags);
     var onlyLocalEnabled = st.onlyLocalEnabled;
       // Set these elements of the state to be that of the save.
       // & Set the saveFileName to be that of the save
@@ -606,7 +523,6 @@ class App extends Component {
           saveFileName: save.title,
           saveStatus: 'pt-icon-saved pt-intent-success'
         }, function(){
-          // console.log('showing a toast for loading.');
           // Run with our new state.
           t.filterData(data);
       });
@@ -620,7 +536,6 @@ class App extends Component {
       title = 'Untitled'
       this.setState({saveFileName: title});
     }
-    console.log('doing a save!', title);
     // var title = 'Foobar';
     // Given that I'm basing it on titleHash and not id, probably should ditch id.
     var selected_tags = this.state.selected_tags;
@@ -640,7 +555,6 @@ class App extends Component {
       t.dBObject.holder.saveDatabase();
       t.dBObject.getResults(t.dBObject.holder, t.dBObject);
       t.listSaves(t.dBObject.results);
-      console.log('new saving... and updating list of saves', t.dBObject.results);
       // And update the UI.
       t.toast.show({
           message: (<span className='pt-ui-text-large'>{testDoc.title} saved</span>),
@@ -654,7 +568,6 @@ class App extends Component {
         t.dBObject.holder.saveDatabase();
         t.dBObject.getResults(t.dBObject.holder, t.dBObject);
         t.listSaves(t.dBObject.results);
-        console.log(t.dBObject.results);
       // Update the UI.
         t.toast.show({
             // className: 'pt-dark',
@@ -681,7 +594,6 @@ class App extends Component {
 
       // If we have a db that has a collection already, then its not first run. 
       var checkCol = this.dBObject.checkCollections(this.dBObject.holder, 'saves');
-      console.log('check the db object for basic stuff', checkCol);
       if (checkCol) {
         this.toggleFirstRun(false);
       } else {
@@ -692,8 +604,6 @@ class App extends Component {
       }
 
       var saves = this.dBObject.doLoad().results;
-      // console.log('loaded db object', dBObject);
-      // console.log('saves', saves);
       // Need to update state w/ list of saved states.
       this.listSaves(saves);
 
@@ -708,17 +618,6 @@ class App extends Component {
   render() {
     return (
       <div className="App">
-      {/*
-
-        <div className="App-header">
-          <img src={calendarIcon} className="App-logo" alt="logo" />
-          <h2>Welcome to Calendar Builder 1.0</h2>
-        </div>
-      */}
-        
-        {/*<p className="App-intro">
-          Build a calendar by selecting available tags.  NB: tags that have no events associated with them in this set of events are disabled. Selecting tags narrows the set.
-        </p>*/}
 
         <SavedList
           saves={this.state.saves}
@@ -753,12 +652,6 @@ class App extends Component {
 
           </div>
         </Dialog>
-
-        {/*
-          <h4>Getting started</h4>
-        <p>To create a calendar, start by selecting some tags to narrow down the types of events you'd like to display. You can also choose the source of the events.  A preview of your calendar will appear based on your selections.
-        </p>
-        */}
 
         <div className="toasties"></div>
 
@@ -825,7 +718,6 @@ class SavedList extends Component {
     var saveFileName = this.props.saveFileName;
     var handleTitleChange = this.props.handleTitleChange;
     var doFileLoad = this.props.doFileLoad;
-    // console.log('here what we got saved...', saves);
 
     var loadPlaceHolder = "";
     if (saves.length < 1) {
@@ -866,8 +758,6 @@ class SavedList extends Component {
 
     var saveField = (
       <div>
-        {/*
-        <EditableText className="pt-intent-primary" placeholder="Edit calendar name..." value={currentCalTitle} />*/}
 
         <input className="pt-input" type="text" width="300px" placeholder="Enter a name for your calendar" onChange={handleTitleChange} value={saveFileName}/> 
         &nbsp;
@@ -888,13 +778,7 @@ class SavedList extends Component {
             CalendarBuilder v1.0
           </div>
           <span className="pt-navbar-divider"></span>
-          {/*<Popover content={saveDialogue}
-            interactionKind={PopoverInteractionKind.CLICK}
-            popoverClassName="pt-popover-content-sizing"
-            position={Position.RIGHT}
-            useSmartPositioning={false}>
-            <button className="pt-button pt-intent-primary">Save calendar</button>
-          </Popover>*/}
+          
           {saveField}
           <span className="pt-navbar-divider"></span>
           <Popover content={menuContent}
@@ -932,13 +816,11 @@ class TagList extends Component {
     this.props = props;
   }
   render () {
-    // console.log('rendered');
     // This seems weird, but I gotta pass down the click handler.
     // There's other methods I guess.
     // TODO investigate how one is to do this. What's the reac-way? Passing down a big component that holds all methods?
     var clicky = this.props.clicky;
     var selected = this.props.selected;
-    // console.log('selected tags', selected);
     return (
       <div className={"tag-list"}>
         <h4>Tags</h4>
@@ -951,10 +833,6 @@ class TagList extends Component {
     );
   }
 }
-
-// function doFoo() {
-//   console.log('foo');
-// }
 
 /**
  * Is one tag.
@@ -973,7 +851,6 @@ class Tag extends Component {
   }
 }
 
-// TODO: merge this with taglist (should be one big Component).
 class Calendar extends Component {
   componentDidMount() {
     // TODO: look into this, this seems weird. this parent stuff.
@@ -982,13 +859,7 @@ class Calendar extends Component {
     // Use the fullCalendar plugin.
     var cal = jQuery('#'+this.props.id).fullCalendar();
     parent.calObj = jQuery('#'+this.props.id).fullCalendar('getCalendar');
-    // console.log('calendar object?', parent);
-    // var sampleEvent = {
-    //   title: 'My fun event!',
-    //   start: moment()
-    // }
 
-    // parent.calObj.renderEvent( sampleEvent );
   }
   render() {
     return (
@@ -1039,9 +910,6 @@ class AllSources extends OptionToggle {
 
 class TopTen extends OptionToggle {
 }
-
-// Removes all console calls to actual console.
-// console.log = function(){};
 
 export default App;
 
