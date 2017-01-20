@@ -958,4 +958,8 @@ export default App;
  * TODO: probably dont need shortid anymore, maybe get rid of it.
  * TODO: make a decision about whether reset shows all calendar items, i.e. if theres no filters selected, do we want to display all, and if so, why not on first load too?
  * TODO: need to add hover or click to fullcalendar events (pop-up behaviour)
+ * TODO: replace tags w/ blueprint tags?
+ * TODO: create a consumer, front-facing version to show how the calendars built in this app could be consumed/presented
+ * TODO: remove non-build things from build branch
+ * TODO: add screencast
  */
