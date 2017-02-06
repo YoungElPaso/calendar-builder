@@ -47,6 +47,11 @@ import tendata from './data/big-data-max-row-1000-max-facet-10.json'
 // Bring in the css.
 import './App.css';
 
+// Import a bunch of sub-components.
+import OptionToggle from './components/OptionToggle.js'
+import TagList from './components/TagList.js'
+
+
 class App extends Component {
   constructor(props) {
     // console.log('constructed');
@@ -807,50 +812,6 @@ class SavedList extends Component {
   }
 }
 
-/**
- * Holds a bunch of tags.
- */
-class TagList extends Component {
-  constructor(props) {
-    super(props);
-    this.props = props;
-  }
-  render () {
-    // This seems weird, but I gotta pass down the click handler.
-    // There's other methods I guess.
-    // TODO investigate how one is to do this. What's the reac-way? Passing down a big component that holds all methods?
-    var clicky = this.props.clicky;
-    var selected = this.props.selected;
-    return (
-      <div className={"tag-list"}>
-        <h4>Tags</h4>
-        {
-          this.props.tags.map((tag) =>
-            <Tag key={tag.id} title={tag.title} onClick={clicky.bind(this, tag)} toggle={_.has(selected, tag.id)} enabled={tag.enabled || 'disabled'} visible={tag.visible} count={tag.count} />
-          )
-        }
-      </div>
-    );
-  }
-}
-
-/**
- * Is one tag.
- */
-class Tag extends Component {
-  constructor(props) {
-    super(props);
-    this.props = props;
-  }
-  render () {
-    return (
-      <div className={'tag selected-'+ this.props.toggle + ' ' + this.props.enabled + ' viz-' + this.props.visible} onClick={this.props.onClick}>
-      {this.props.title} <span className="count">{this.props.count}</span>
-      </div>
-    );
-  }
-}
-
 class Calendar extends Component {
   componentDidMount() {
     // TODO: look into this, this seems weird. this parent stuff.
@@ -864,38 +825,6 @@ class Calendar extends Component {
   render() {
     return (
       <div className="calendar-element" id={this.props.id}>
-      </div>
-    )
-  }
-}
-
-class OptionToggle extends Component {
-  constructor(props) {
-    super(props);
-    this.props = props;
-  }
-  render () {
-    // We can use a bunch of these props to have very dynamic labels.
-    // Two such toggles, with states that are opposites can act like a switch.
-  
-    var enabled = this.props.enabled || false;
-    var optname = this.props.optname || null;
-    var label = this.props.label;
-    var enabledString = this.props.enabledString || null; 
-    var disabledString = this.props.disabledString || null
-
-    var optXtraClass = this.props.extraClass || null;
-
-    if (disabledString && enabledString) {
-      if (enabled) {
-        label = this.props.enabledString;
-      } else {
-        label = this.props.disabledString;
-      }
-    }
-    return (
-      <div className={'option-toggle option-xtras-' + optXtraClass + ' option-name-' + optname + ' option-' + enabled} onClick={this.props.onClick}>
-        {label}&nbsp;
       </div>
     )
   }
