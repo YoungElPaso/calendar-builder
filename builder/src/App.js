@@ -7,11 +7,6 @@ import {
     Intent,
     Position,
     Popover,
-    Menu,
-    MenuItem,
-    MenuDivider,
-    Navbar,
-    EditableText,
     Dialog,
     ProgressBar,
     PopoverInteractionKind
@@ -36,14 +31,10 @@ import hasha from 'hasha';
 // Need a nice icon.
 import calendarIcon from './calendar-icon.svg';
 // Need some sample data.
-// import data from './data/test13-channels-index-with-tagname-facet.json';
 
-// TODO: try filtering on client side, instead of extra ajax for prototype.
-// Yeah use lodash filtering to create a function that locally re-queries the JSON based on facets selected. No need to keep going back to the server.
-// import data from './data/new-test-events-lots.json';
+// Use lodash filtering to create a function that locally re-queries the JSON based on facets selected. No need to keep going back to the server.
 import data from './data/big-data.json';
-// Get the data for just top 10 facets...
-import tendata from './data/big-data-max-row-1000-max-facet-10.json'
+
 // Bring in the css.
 import './App.css';
 
@@ -55,25 +46,15 @@ import SavedList from './components/SavedList.js'
 
 class App extends Component {
   constructor(props) {
-    // console.log('constructed');
     super(props);
-    // Thought I wanted some dummy data at first, but naw, setState does a merge.
-    // var tags = [
-    //   // {id:1, title:'foobar'},
-    //   // {id:2, title:'barf'},
-    //   // {id:3, title:'puke'}
-    // ];
     // The app state holds the tags we initially get, the inital query and other things.
 
-    // TODO: state should be empty and loaded from localstorage, if we want something fancy.  
+    // If there is no state, set some initially.
     if (!this.state) {
       this.state = {
         firstRun: true,
         persist: true,
-        saves: [
-          // {id:3, title:'fake saved item'},
-          // {id:4, title:'another fake item'}
-        ],
+        saves: [],
         tags: [],
         query: '',
         selected_tags: {},
@@ -101,6 +82,7 @@ class App extends Component {
     this.doFileLoad = this.doFileLoad.bind(this);
   }
 
+  // Sets the file name to save.
   handleTitleChange(event){
     this.saveDirty(false);
     this.setState({saveFileName: event.target.value}, function(){
@@ -112,6 +94,7 @@ class App extends Component {
     this.setState({firstRun: boolean}, callback);
   }
 
+  // Shows the help text or not.
   showHelp(){
     if(!this.state.showingHelp) {
       this.setState({showingHelp: true}, function(){
@@ -162,22 +145,9 @@ class App extends Component {
     if (enabling == true) {
       if (this.state.onlyLocalEnabled == false) {
         this.setState({onlyLocalEnabled: true}, function(){
-          // // This is kinda crappy.  Too high-level, just blasts away everything...
-          // // this.getAllTags(data);
-          
           // Better approach would be same as handling tag click...
           // Now filter the data.
           this.filterData(data);
-
-          // Might wanna consider overriding hide/show tags if some are hidden.
-          // But in practise this is super confusing and doesn't resplect the users choice.  A better option would be a notice...'
-          // TODO: update the show fewer tags with number of active hidden tags.
-          if (this.state.hasHiddenTags == true && this.state.onlyTopTenEnabled) {
-            // this.setState({onlyTopTenEnabled: false}, function(){
-            //   this.onlyTopTen();
-            // });
-            // this.onlyTopTen();
-          }
         });
       };
     } else if (enabling == false) {
@@ -190,19 +160,15 @@ class App extends Component {
         });
       }
     }
-    // TODO: need the actual callback after setState to do filtering and update tags.
   }
+
   // Toggles the top ten filtering.
   onlyTopTen(){
     // All interatctions should blow away pre-existing toast notices since they might be invalidated.
     this.toast.clear();
-
-
-
     // Overriding to disable this feature. Instead will provide feedback.
     // Less user-hostile.
     var cantHide = false; 
-
     if ((this.state.onlyTopTenEnabled === false || !this.state.onlyTopTenEnabled) && !cantHide) {
       var that = this;
       // Check if selected tags would become invisible if most are collapsed. Ie. if this is activated.
@@ -212,8 +178,7 @@ class App extends Component {
         //TODO: the logic above is faulty, message appears too often.
         that.toast.show({
           message: 'Just an FYI, you might be hiding some of your selected tags!',
-          timeout: 4000,
-          // intent: Intent.PRIMARY
+          timeout: 4000
         })
         return tag.num > ceiling;
       });
@@ -275,37 +240,7 @@ class App extends Component {
         that.setState({tagUpdtd: tag});
       } 
       else {
-        // Handle case of hidden but useful tag. TODO: this needs to be done probably out of the loop and better. I.e. show all tags and explicitly trigger override. Blah...this is bad...
-
-        // If its not visible, currently disabled, top15 is on and it should be enabled and visible and its NOT in the top 15
-
-
-        // if (whichTag > that.state.hideTagsAfter && tag.enabled == true && tag.visible == true) {
-        //   that.setState({onlyTopTenEnabled: false});
-        //   tag.visible = true;
-        // }
-        //
-
-        // If showing fewer, but we need to see one that is necessry (due to other filter), then we should show all, including that one.
-        // console.log(tag.enabled);
-        // console.log = function(){};
-        // if (that.state.onlyTopTenEnabled && whichTag >= that.state.hideTagsAfter && tag.visible == false && tag.enabled=='enabled') {
-        //   console.log('hidey hole!');
-        //   that.setState({onlyTopTenEnabled: false});
-        //   // show em all.
-        //   tag.visible = true;
-        // }
-
-
         tag.enabled = 'enabled';
-
-        // Maybe flag that there are hidden tags in state? That would work but seems like cheating...But then again, some of these conditions should be an extra, optional layer. Annoying all the same.
-        
-        if (tag.visible == false && tag.enabled == 'enabled') {
-          // console.log('hidden tags!');
-          // that.setState({hasHiddenTags: true});
-        }
-
         var tagUpdtd = that.state.tags[whichTag];
         that.setState({tagUpdtd: tag});
       }
@@ -348,32 +283,21 @@ class App extends Component {
             extry = obj['ss_field_source_site:url'] == onlyLocalVal;
             includeChecks.push(extry);
         }
-
-        //
-
         // TODO fix up this hard to follow boolean logic.  Make it more legible.
         return _.indexOf(includeChecks, false) < 0;
-        // return true;
       });
 
     } else {
       // console.log('non-filtered docs', filterDocs);
     }
-
     // Probably should set the state to include filteredDocs count...
-      this.setState({foundDocsCount: filterDocs.length});
-
-    //
-
-      // TODO update status of remaining tags (i.e. disable if they're dead ends.)
+    this.setState({foundDocsCount: filterDocs.length});
+    // Update status of remaining tags (i.e. disable if they're dead ends.)
     this.updateTags(filterDocs);
-    // TODO fix up this callback design.  Kinda weird. This cb should update calendar.
-    // cb(filterDocs);
-    
     this.updateCal(filterDocs);
-    
   }
 
+  // Not even sure what this does anymore...
   static calObj = {id:'foobar'}
 
   // Now update the calendar.
@@ -419,11 +343,12 @@ class App extends Component {
     cal.addEventSource(eventCollection);
   }
 
+  // Handles tag click events.
   handleTagClick(tag) {
     // As soon as you click, you dirty the state that may have been saved.
     this.saveDirty(false);
 
-    // All interatctions should blow away pre-existing toast notices since they might be invalidated.
+    // All interactions should blow away pre-existing toast notices since they might be invalidated.
     this.toast.clear();
 
     if (tag.enabled !== 'disabled') {
@@ -444,17 +369,15 @@ class App extends Component {
     }
   }
 
-
-  // Indicate things have changed since save 'dirty'
+  // Indicate things have changed since save 'dirty'.
   saveDirty(bool) {
     this.setState({saveStatus: bool});
   }
 
+  // Creates a set of tags from the data provided.
   getAllTags(data) {
     // This is fixture stuff, should be wrapped in AJAX call.
     var raw = data.facet_counts.facet_fields['sm_field_tags:name'];
-    // console.log(data);
-    // console.log(raw);
     var newTags = [];
     
     if (this.state.onlyTopTenEnabled) {
@@ -472,7 +395,6 @@ class App extends Component {
         var isVis = isVisVal? isVisVal > key / 2 : true;
         newTags.push({
           num: key/2,
-          // id: shortid.generate(), this is probably bad, cause its diff everytime we run the function!
           id: hasha(entry),
           title: entry,
           visible: isVis,
@@ -506,8 +428,10 @@ class App extends Component {
     )
   }
 
+  // Holds dBObject for later reference in this scope.
   static dBObject = {}
 
+  // Loads a 'file' from ocal storage via LokiJS.
   doFileLoad(save) {
     // Need to actually load the save from storage, dont rely on menu.
     var t = this;
@@ -535,6 +459,7 @@ class App extends Component {
     });
   }
 
+  // Saves a calendar configuration to localstorage with LokiJS.
   doSave(title){
     var title = this.state.saveFileName;
     if (!title) {
@@ -542,8 +467,6 @@ class App extends Component {
       title = 'Untitled'
       this.setState({saveFileName: title});
     }
-    // var title = 'Foobar';
-    // Given that I'm basing it on titleHash and not id, probably should ditch id.
     var selected_tags = this.state.selected_tags;
     var onlyLocalEnabled = this.state.onlyLocalEnabled;
     var testDoc = {
@@ -565,7 +488,6 @@ class App extends Component {
       t.toast.show({
           message: (<span className='pt-ui-text-large'>{testDoc.title} saved</span>),
           timeout: 1000,
-          // intent: Intent.SUCCESS
         });
       t.setState({saveStatus: 'pt-icon-saved pt-intent-success'}, function(){
       });
@@ -576,16 +498,15 @@ class App extends Component {
         t.listSaves(t.dBObject.results);
       // Update the UI.
         t.toast.show({
-            // className: 'pt-dark',
             message: (<span className='pt-ui-text-large'>{testDoc.title} updated</span>),
             timeout: 1000,
-            // intent: Intent.SUCCESS
           });
       t.setState({saveStatus: 'pt-icon-saved pt-intent-success'}, function(){
       });
     }
   }
 
+  // React lifecycle method: when the main App component loads, start doing somethings...
   componentDidMount() {
     // Get all of the tags for the UI.
     // Run update on all tags right away?
@@ -604,7 +525,6 @@ class App extends Component {
         this.toggleFirstRun(false);
       } else {
         this.toggleFirstRun(true, function(){
-          console.log('first run is true!');
           this.setState({showingHelp: true});
         });
       }
@@ -612,15 +532,12 @@ class App extends Component {
       var saves = this.dBObject.doLoad().results;
       // Need to update state w/ list of saved states.
       this.listSaves(saves);
-
-      // Hrmm, probably should have a better place to hold our dBObject
-      // this.dBObject = dBObject;
-
     }
 
     // Init the bloody toaster.
     this.createToaster();
   }
+  // The main JSX for rendering the app.  Note all the sub-components.
   render() {
     return (
       <div className="App">
@@ -689,8 +606,6 @@ class App extends Component {
           disabledString='Include all content'
         />
 
-        {/* This popover needs work, not the best use maybe. redundant and it messes with focus cause overlay is everywhere. 
-          */}
         <Popover
           content={this.state.foundDocsCount + ' matching events.'}
           isOpen={false /*this.state.foundDocsCount > 0*/}
@@ -707,13 +622,16 @@ class App extends Component {
 }
 
 
+// An ext. of OptionToggle.
 class Local extends OptionToggle {
 }
 
+// An ext. of OptionToggle.
 class AllSources extends OptionToggle {
 
 }
 
+// An ext. of OptionToggle.
 class TopTen extends OptionToggle {
 }
 
@@ -767,5 +685,5 @@ export default App;
  * TODO: replace tags w/ blueprint tags?
  * TODO: create a consumer, front-facing version to show how the calendars built in this app could be consumed/presented
  * TODO: remove non-build things from build branch
- * TODO: add screencast
+ * TODO: add screencast -- DONE
  */
