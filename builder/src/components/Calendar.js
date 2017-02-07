@@ -10,11 +10,10 @@ class Calendar extends Component {
   componentDidMount() {
     // TODO: look into this, this seems weird. this parent stuff.
     var parent = this.props.parent;
-
-    // Use the fullCalendar plugin.
-    var cal = jQuery('#'+this.props.id).fullCalendar();
+    
+    // Use the fullCalendar plugin. 
+    jQuery('#'+this.props.id).fullCalendar();
     parent.calObj = jQuery('#'+this.props.id).fullCalendar('getCalendar');
-
   }
   render() {
     return (
