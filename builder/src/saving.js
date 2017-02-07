@@ -31,7 +31,7 @@ class Database {
     writeToSaves(db, col, doc, op) {
         var collection = db.getCollection(col);
         // Make sure we catch errors.
-        if (op == 'w') {
+        if (op === 'w') {
             try {
                 collection.insert(doc);
                 return true;
@@ -39,10 +39,10 @@ class Database {
                 return false;
             }
         }
-        else if (op == 'u') {
+        else if (op === 'u') {
             // gotta retrieve original, map changes to it, then update.
             var oldDoc = collection.where(function(obj){
-                return obj.titleHash == doc.titleHash;
+                return obj.titleHash === doc.titleHash;
             });
             oldDoc = oldDoc[0];
             var newDoc = oldDoc;
@@ -92,7 +92,7 @@ class Database {
         db.loadDatabase();
         var saves = db.getCollection('saves');
         res = saves.where(function(obj){
-            return obj.titleHash == doc.titleHash;
+            return obj.titleHash === doc.titleHash;
         });
         return res[0];
     }
