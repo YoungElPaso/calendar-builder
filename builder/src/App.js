@@ -2,7 +2,6 @@ import React, { Component } from 'react';
 
 // Using some components from blueprintjs for notices etc.
 import {
-    Button,
     Toaster,
     Intent,
     Position,
@@ -14,11 +13,8 @@ import {
 
 // Import the DB implmenetation that uses lokijs.
 import Database from './saving.js';
-// Need fullcalendar.
-import 'fullcalendar';
-// Think we need jQuery.
-import jQuery from 'jquery';
-// Need moment to work w/ fullCalendar.
+
+// Need moment to work w/ fullCalendar events.
 import moment from 'moment';
 
 // Need lodash utilities for arrays and JSON filtering.
@@ -28,10 +24,7 @@ import shortid from 'shortid';
 // Need hasha to create some hashes of titles for saving.
 import hasha from 'hasha';
 
-// Need a nice icon.
-import calendarIcon from './calendar-icon.svg';
 // Need some sample data.
-
 // Use lodash filtering to create a function that locally re-queries the JSON based on facets selected. No need to keep going back to the server.
 import data from './data/big-data.json';
 
@@ -546,7 +539,6 @@ class App extends Component {
           saves={this.state.saves}
           reset={this.reset}
           help={this.showHelp}
-          currentCalTitle={this.state.currentCalTitle}
           saveStatus={this.state.saveStatus || null}
           saveHandler={this.doSave}
           saveFileName={this.state.saveFileName}
