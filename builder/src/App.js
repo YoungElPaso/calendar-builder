@@ -50,7 +50,8 @@ import './App.css';
 // Import a bunch of sub-components.
 import OptionToggle from './components/OptionToggle.js'
 import TagList from './components/TagList.js'
-
+import Calendar from './components/Calendar.js'
+import SavedList from './components/SavedList.js'
 
 class App extends Component {
   constructor(props) {
@@ -705,130 +706,6 @@ class App extends Component {
   }
 }
 
-/**
- * Holds list of saved states.
- */
-class SavedList extends Component {
-  constructor(props) {
-    super(props);
-    this.props = props;
-  }
-  render () {
-    var currentCalTitle = this.props.currentCalTitle;
-    var reset = this.props.reset;
-    var showHelp = this.props.help;
-    var saves = this.props.saves || [];
-    var saveStatus = this.props.saveStatus;
-    var saveHandler = this.props.saveHandler;
-    var saveFileName = this.props.saveFileName;
-    var handleTitleChange = this.props.handleTitleChange;
-    var doFileLoad = this.props.doFileLoad;
-
-    var loadPlaceHolder = "";
-    if (saves.length < 1) {
-      loadPlaceHolder = (
-        <MenuDivider title="No calendars to load yet!" />
-      )
-    } else {
-      loadPlaceHolder = (
-        <MenuDivider title="Select a calendar to load" />
-      )
-    }
-    var menuContent = (
-      <div className="saved-list">
-          <Menu>
-              {loadPlaceHolder}
-              {
-                saves.map((save) =>
-                  <MenuItem
-                    iconName="calendar"
-                    key={save.id}
-                    text={save.title}
-                    onClick={doFileLoad.bind(this, save)}
-                  />
-                )
-              }
-          </Menu>
-      </div>
-    );
-    var saveDialogue = (
-      <div>
-        <label className="pt-label">
-          Enter a name for this calendar, e.g. 'Local winter & music'
-          <input className="pt-intent-primary pt-large pt-fill" type="text" width="300px" placeholder="Name"/>
-        </label>
-          <button className="pt-button pt-intent-primary">Save</button> 
-      </div>
-    )
-
-    var saveField = (
-      <div>
-
-        <input className="pt-input" type="text" width="300px" placeholder="Enter a name for your calendar" onChange={handleTitleChange} value={saveFileName}/> 
-        &nbsp;
-        <button
-          className={"pt-button pt-intent-primary pt-icon-document " + saveStatus}
-          onClick={saveHandler.bind(this)}
-          >
-            Save
-        </button>
-      </div>
-    )
-
-    return (
-      <nav className="pt-navbar pt-fixed-top">
-        <div className='pt-navbar-group pt-align-left'>
-            <img src={calendarIcon} className="" alt="logo"  height="50px" />
-          <div className="pt-navbar-heading">
-            CalendarBuilder v1.0
-          </div>
-          <span className="pt-navbar-divider"></span>
-          
-          {saveField}
-          <span className="pt-navbar-divider"></span>
-          <Popover content={menuContent}
-            interactionKind={PopoverInteractionKind.CLICK}
-            popoverClassName="pt-popover-content-sizing"
-            position={Position.BOTTOM}
-            useSmartPositioning={false}>
-            <button className="pt-button pt-intent-primary pt-icon-document-open">Load</button>
-          </Popover>
-        </div>
-        <div className='pt-navbar-group pt-align-right'>
-          <button
-            onClick={reset.bind(this)}
-            className="pt-button pt-intent-primary pt-icon-remove">
-            Reset filters
-          </button>
-          <span className="pt-navbar-divider"></span>
-          <button
-            onClick={showHelp.bind(this)}
-            className="pt-button pt-intent-primary pt-icon-help">
-            Help
-          </button>
-        </div>
-      </nav>
-    );
-  }
-}
-
-class Calendar extends Component {
-  componentDidMount() {
-    // TODO: look into this, this seems weird. this parent stuff.
-    var parent = this.props.parent;
-
-    // Use the fullCalendar plugin.
-    var cal = jQuery('#'+this.props.id).fullCalendar();
-    parent.calObj = jQuery('#'+this.props.id).fullCalendar('getCalendar');
-
-  }
-  render() {
-    return (
-      <div className="calendar-element" id={this.props.id}>
-      </div>
-    )
-  }
-}
 
 class Local extends OptionToggle {
 }
