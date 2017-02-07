@@ -21,7 +21,6 @@ class SavedList extends Component {
     this.props = props;
   }
   render () {
-    var currentCalTitle = this.props.currentCalTitle;
     var reset = this.props.reset;
     var showHelp = this.props.help;
     var saves = this.props.saves || [];
@@ -58,15 +57,6 @@ class SavedList extends Component {
           </Menu>
       </div>
     );
-    var saveDialogue = (
-      <div>
-        <label className="pt-label">
-          Enter a name for this calendar, e.g. 'Local winter & music'
-          <input className="pt-intent-primary pt-large pt-fill" type="text" width="300px" placeholder="Name"/>
-        </label>
-          <button className="pt-button pt-intent-primary">Save</button> 
-      </div>
-    )
 
     var saveField = (
       <div>
