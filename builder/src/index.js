@@ -16,6 +16,7 @@ ReactDOM.render(
   <Router history={browserHistory}>
     <Route path="/" component={App} />
     <Route path="/client" component={Client} />
+    <Route path="/client/:hash" component={Client} />
   </Router>,
   document.getElementById('root')
 );
