@@ -32,12 +32,10 @@ import data from './data/big-data.json';
 import './App.css';
 
 // Import a bunch of sub-components.
-import OptionToggle from './components/OptionToggle.js'
-import TagList from './components/TagList.js'
 import Calendar from './components/Calendar.js'
-import SavedList from './components/SavedList.js'
+import Autoload from './components/Autoload.js'
 
-class App extends Component {
+class Client extends Component {
   constructor(props) {
     super(props);
     // The app state holds the tags we initially get, the inital query and other things.
@@ -372,11 +370,11 @@ class App extends Component {
     // This is fixture stuff, should be wrapped in AJAX call.
     var raw = data.facet_counts.facet_fields['sm_field_tags:name'];
     var newTags = [];
-    
+    var isVisVal;
     if (this.state.onlyTopTenEnabled) {
-      var isVisVal = this.state.hideTagsAfter;
+      isVisVal = this.state.hideTagsAfter;
     } else  {
-      var isVisVal = null;
+      isVisVal = null;
     }
 
     raw.map((entry, key)=>{
@@ -435,6 +433,7 @@ class App extends Component {
     var loaded = dbSave;
     // Get state out of the loaded save.
     var st = loaded.state;
+    var title = loaded.title;
     var selected_tags = st.selected_tags;
     var onlyLocalEnabled = st.onlyLocalEnabled;
       // Set these elements of the state to be that of the save.
@@ -443,7 +442,7 @@ class App extends Component {
         {
           selected_tags: selected_tags,
           onlyLocalEnabled: onlyLocalEnabled,
-          saveFileName: save.title,
+          saveFileName: title,
           saveStatus: 'pt-icon-saved pt-intent-success'
         }, function(){
           // Run with our new state.
@@ -465,7 +464,7 @@ class App extends Component {
     var testDoc = {
       id: shortid.generate(),
       title: title,
-      titleHash: hasha(title),
+      titleHash: hasha(title, {algorithm: 'md5'}),
       state: {
         selected_tags: selected_tags,
         onlyLocalEnabled: onlyLocalEnabled
@@ -535,16 +534,8 @@ class App extends Component {
     return (
       <div className="App">
 
-        <SavedList
-          saves={this.state.saves}
-          reset={this.reset}
-          help={this.showHelp}
-          saveStatus={this.state.saveStatus || null}
-          saveHandler={this.doSave}
-          saveFileName={this.state.saveFileName}
-          handleTitleChange = {this.handleTitleChange}
-          doFileLoad = {this.doFileLoad}
-      />
+        <Autoload doFileLoad = {this.doFileLoad} save={this.props.params.hash} title={this.state.saveFileName} />
+
         <Dialog
           iconName="calendar"
           isOpen={this.state.showingHelp}
@@ -585,21 +576,7 @@ class App extends Component {
   }
 }
 
-
-// An ext. of OptionToggle.
-class Local extends OptionToggle {
-}
-
-// An ext. of OptionToggle.
-class AllSources extends OptionToggle {
-
-}
-
-// An ext. of OptionToggle.
-class TopTen extends OptionToggle {
-}
-
-export default App;
+export default Client;
 
 
 // General todos:
