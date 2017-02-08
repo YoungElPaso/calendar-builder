@@ -465,7 +465,7 @@ class App extends Component {
     var testDoc = {
       id: shortid.generate(),
       title: title,
-      titleHash: hasha(title),
+      titleHash: hasha(title, {algorithm: 'md5'}),
       state: {
         selected_tags: selected_tags,
         onlyLocalEnabled: onlyLocalEnabled
