@@ -13,10 +13,16 @@ class Autoload extends Component {
   componentDidMount() {
     // Figure out the state to load based on router hash?
     // console.log('autoload state', this.props);
+    
+  }
+  
+  componentDidUpdate(prevProps, prevState) {
+    // console.log('autoload updated!', prevProps, this.props);
     var doFileLoad = this.props.doFileLoad;
     // For demo purposes, using real save or 'Fall (md5)' as default.
     var save = this.props.save || '58fa788345ab5ac21c2cef38907d4580';
-    if (save) {
+    // Only do the AJAX load once.  This is sloppy and weird, but works.
+    if (save && this.props.data && !this.props.loaded) {
       var doc = {
         titleHash: save
       }
@@ -24,6 +30,7 @@ class Autoload extends Component {
       doFileLoad(doc);
     }
   }
+
   
   render () {
     // Title for the calendar block.
