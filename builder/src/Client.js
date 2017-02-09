@@ -26,7 +26,8 @@ import hasha from 'hasha';
 
 // Need some sample data.
 // Use lodash filtering to create a function that locally re-queries the JSON based on facets selected. No need to keep going back to the server.
-import data from './data/big-data.json';
+// import data from './data/big-data.json';
+var data = {};
 
 // Bring in the css.
 import './App.css';
@@ -71,6 +72,31 @@ class Client extends Component {
     this.handleTitleChange = this.handleTitleChange.bind(this);
     // Binds loading from load menu.
     this.doFileLoad = this.doFileLoad.bind(this);
+
+
+
+    // If persistance is on, we can check some things, like first run,
+    // and saved states.
+    if(this.state.persist){
+      // Instantiate a Database object (contains LokiJS DB and methods for writing/saving - used for persisting state).
+      this.dBObject = new Database();
+      this.dBObject.create();
+    }
+      // // If we have a db that has a collection already, then its not first run. 
+      // var checkCol = this.dBObject.checkCollections(this.dBObject.holder, 'saves');
+      // if (checkCol) {
+      //   this.toggleFirstRun(false);
+      // } else {
+      //   this.toggleFirstRun(true, function(){
+      //     this.setState({showingHelp: true});
+      //   });
+      // }
+
+      // var saves = this.dBObject.doLoad().results;
+      // // Need to update state w/ list of saved states.
+      // that.listSaves(saves);
+    
+
   }
 
   // Sets the file name to save.
@@ -295,7 +321,9 @@ class Client extends Component {
   updateCal(docs) {
     if (docs.length > 0) {
       // Hide other toasts, show one about loading events.
-      this.toast.clear();
+      if(this.toast) {
+        this.toast.clear();
+      }
       this.toast.show({
         message: (
           <div>
@@ -427,7 +455,7 @@ class Client extends Component {
     // Need to actually load the save from storage, dont rely on menu.
     var t = this;
     // Call reset and once that's done, set new state.
-    this.reset(function(){
+    // this.reset(function(){
     // Theres a bug somewhere were save here gets updated (probably cause it derives some props from state, which gets updated and so updates save) TRICKY! So we need to actually reload the DB version of the save.
     var dbSave = t.dBObject.getAResult(t.dBObject.holder, t.dBObject, save);
     var loaded = dbSave;
@@ -443,12 +471,13 @@ class Client extends Component {
           selected_tags: selected_tags,
           onlyLocalEnabled: onlyLocalEnabled,
           saveFileName: title,
+          loadedCal: true,
           saveStatus: 'pt-icon-saved pt-intent-success'
         }, function(){
           // Run with our new state.
           t.filterData(data);
       });
-    });
+    // });
   }
 
   // Saves a calendar configuration to localstorage with LokiJS.
@@ -500,41 +529,32 @@ class Client extends Component {
 
   // React lifecycle method: when the main App component loads, start doing somethings...
   componentDidMount() {
-    // Get all of the tags for the UI.
-    // Run update on all tags right away?
-    this.getAllTags(data);
+    // Trying fetch...
+    var that = this;
+    fetch ('/super-data.json')
+    .then(function(response){
+      response.json().then(function(json){
+        console.log('json?', json);
+        data = json;
 
-    // If persistance is on, we can check some things, like first run,
-    // and saved states.
-    if(this.state.persist){
-      // Instantiate a Database object (contains LokiJS DB and methods for writing/saving - used for persisting state).
-      this.dBObject = new Database();
-      this.dBObject.create();
+        
+        // Get all of the tags for the UI.
+        // Run update on all tags right away?
+        that.getAllTags(data);
 
-      // If we have a db that has a collection already, then its not first run. 
-      var checkCol = this.dBObject.checkCollections(this.dBObject.holder, 'saves');
-      if (checkCol) {
-        this.toggleFirstRun(false);
-      } else {
-        this.toggleFirstRun(true, function(){
-          this.setState({showingHelp: true});
-        });
-      }
+        
 
-      var saves = this.dBObject.doLoad().results;
-      // Need to update state w/ list of saved states.
-      this.listSaves(saves);
-    }
-
-    // Init the bloody toaster.
-    this.createToaster();
+      });
+    });
+        // Init the bloody toaster.
+        that.createToaster();
   }
   // The main JSX for rendering the app.  Note all the sub-components.
   render() {
     return (
       <div className="App">
 
-        <Autoload doFileLoad = {this.doFileLoad} save={this.props.params.hash} title={this.state.saveFileName} />
+        <Autoload doFileLoad = {this.doFileLoad} save={this.props.params.hash} title={this.state.saveFileName} data={data} loaded={this.state.loadedCal || false} />
 
         <Dialog
           iconName="calendar"
